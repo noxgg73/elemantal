@@ -34,13 +34,36 @@ public class VisitPrisonC2SPacket {
 
             player.getCapability(PlayerElementProvider.PLAYER_ELEMENT).ifPresent(data -> {
                 ElementType element = data.getElement();
-                if (element != ElementType.ROYAL && element != ElementType.DARKNESS) {
-                    player.sendSystemMessage(Component.literal("Ce pouvoir est reserve aux classes Royal et Tenebres!")
+                if (element != ElementType.ROYAL && element != ElementType.DARKNESS && element != ElementType.DEMON) {
+                    player.sendSystemMessage(Component.literal("Ce pouvoir n'est pas disponible pour ta classe!")
                             .withStyle(ChatFormatting.RED));
                     return;
                 }
 
                 ServerLevel level = player.serverLevel();
+
+                // DEMON: Spawn demon village
+                if (element == ElementType.DEMON) {
+                    net.minecraft.world.phys.Vec3 look = player.getLookAngle();
+                    int villageX = (int)(player.getX() + look.x * 30);
+                    int villageZ = (int)(player.getZ() + look.z * 30);
+
+                    com.noxgg.elementalpower.world.DemonVillageGenerator.generate(
+                            level, villageX, villageZ, player.getUUID());
+
+                    // Teleport player to village center
+                    int villageY = level.getHeight(net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,
+                            villageX, villageZ);
+                    player.teleportTo(villageX + 0.5, villageY + 1, villageZ + 0.5);
+
+                    level.playSound(null, player.blockPosition(), SoundEvents.WITHER_SPAWN, SoundSource.PLAYERS, 2.0f, 0.5f);
+
+                    player.sendSystemMessage(net.minecraft.network.chat.Component.literal(">> Village Demoniaque invoque! ")
+                            .withStyle(ChatFormatting.DARK_RED, ChatFormatting.BOLD)
+                            .append(net.minecraft.network.chat.Component.literal("Les demons vous accueillent...")
+                                    .withStyle(ChatFormatting.RED)));
+                    return;
+                }
 
                 // Check if player is already in the prison (y < -40) -> teleport back up
                 if (player.getY() < -40) {
