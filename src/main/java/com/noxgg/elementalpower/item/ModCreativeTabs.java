@@ -76,6 +76,9 @@ public class ModCreativeTabs {
                         // Royal Crown
                         output.accept(ModItems.ROYAL_CROWN.get());
 
+                        // Soul Contract
+                        output.accept(ModItems.SOUL_CONTRACT.get());
+
                         // Reset Pearl
                         output.accept(ModItems.ELEMENT_RESET_PEARL.get());
 

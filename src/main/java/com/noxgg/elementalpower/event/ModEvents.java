@@ -5,6 +5,7 @@ import com.noxgg.elementalpower.item.ElementalArmorItem;
 import com.noxgg.elementalpower.item.ElementalWandItem;
 import com.noxgg.elementalpower.world.BlackHoleManager;
 import com.noxgg.elementalpower.world.CarnivorousFlowerManager;
+import com.noxgg.elementalpower.world.DreamManager;
 import com.noxgg.elementalpower.world.SoulTsunamiManager;
 import com.noxgg.elementalpower.world.DarkPrisonManager;
 import com.noxgg.elementalpower.world.PoisonDragonManager;
@@ -20,6 +21,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.entity.living.LivingHurtEvent;
+import net.minecraftforge.event.entity.player.PlayerSleepInBedEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
@@ -38,10 +40,20 @@ public class ModEvents {
     }
 
     @SubscribeEvent
+    public static void onPlayerSleep(PlayerSleepInBedEvent event) {
+        if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        if (DreamManager.isDreaming(player.getUUID())) return;
+
+        // Cancel normal sleep and start dream sequence
+        event.setResult(Player.BedSleepingProblem.OTHER_PROBLEM);
+        DreamManager.startDream(player);
+    }
+
+    @SubscribeEvent
     public static void onPlayerTick(TickEvent.PlayerTickEvent event) {
         if (event.phase != TickEvent.Phase.END) return;
         if (!(event.player instanceof ServerPlayer player)) return;
-        if (player.tickCount % 20 != 0) return; // Check every second
+        if (player.tickCount % 20 != 0) return;
 
         // Detect demon portal: player standing on nether portal with lodestone below
         BlockPos feetPos = player.blockPosition();
@@ -70,6 +82,7 @@ public class ModEvents {
             BlackHoleManager.tick();
             SoulTsunamiManager.tick();
             CarnivorousFlowerManager.tick();
+            DreamManager.tick();
         }
     }
 

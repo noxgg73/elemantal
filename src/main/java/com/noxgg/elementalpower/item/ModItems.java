@@ -123,6 +123,13 @@ public class ModItems {
             () -> new RoyalCrownItem(ModArmorMaterials.FIRE, ArmorItem.Type.HELMET,
                     new Item.Properties().rarity(net.minecraft.world.item.Rarity.EPIC)));
 
+    // Soul Contract (dream quest item)
+    public static final RegistryObject<Item> SOUL_CONTRACT = ITEMS.register("soul_contract",
+            () -> new Item(new Item.Properties().stacksTo(1).rarity(net.minecraft.world.item.Rarity.RARE)) {
+                @Override
+                public boolean isFoil(net.minecraft.world.item.ItemStack stack) { return true; }
+            });
+
     // Element Reset Pearl
     public static final RegistryObject<Item> ELEMENT_RESET_PEARL = ITEMS.register("element_reset_pearl",
             () -> new ElementResetPearlItem(new Item.Properties().stacksTo(1).rarity(net.minecraft.world.item.Rarity.EPIC)));
