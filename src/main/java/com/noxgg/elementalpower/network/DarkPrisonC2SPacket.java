@@ -46,6 +46,13 @@ public class DarkPrisonC2SPacket {
                     return;
                 }
 
+                // Check level 10 minimum for G spells
+                if (data.getLevel() < 10) {
+                    player.sendSystemMessage(Component.literal(">> Sort G verrouille! Niveau 10 requis (actuel: " + data.getLevel() + ")")
+                            .withStyle(ChatFormatting.RED));
+                    return;
+                }
+
                 ServerLevel level = player.serverLevel();
 
                 // SPACE: Black hole doesn't need a target
