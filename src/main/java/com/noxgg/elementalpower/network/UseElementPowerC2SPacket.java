@@ -108,7 +108,16 @@ public class UseElementPowerC2SPacket {
                         level.playSound(null, player.blockPosition(), SoundEvents.SPIDER_AMBIENT, SoundSource.PLAYERS, 1.0f, 0.8f);
                     }
                     case DARKNESS -> {
-                        // GIANT SHADOW HAND - real hand shape made of particles
+                        // GIANT SHADOW HAND - scales with level and souls
+                        final float[] damageHolder = {22.0f};
+                        final float[] scaleHolder = {1.0f};
+                        player.getCapability(com.noxgg.elementalpower.element.PlayerElementProvider.PLAYER_ELEMENT).ifPresent(elemData -> {
+                            damageHolder[0] = 22.0f + elemData.getLevel() * 0.5f + elemData.getSouls() * 0.02f;
+                            scaleHolder[0] = 1.0f + elemData.getLevel() * 0.02f;
+                        });
+                        float handDamage = damageHolder[0];
+                        float handScale = scaleHolder[0];
+
                         Vec3 lookDir = player.getLookAngle();
                         Vec3 flatLook = new Vec3(lookDir.x, 0, lookDir.z).normalize();
                         Vec3 handCenter = player.position().add(flatLook.scale(8));
@@ -235,7 +244,7 @@ public class UseElementPowerC2SPacket {
 
                         for (var entity : nearbyEntities) {
                             if (entity instanceof net.minecraft.world.entity.LivingEntity living) {
-                                living.hurt(level.damageSources().magic(), 22.0f);
+                                living.hurt(level.damageSources().magic(), handDamage);
                                 living.push(0, -2.5, 0);
                                 living.hurtMarked = true;
                                 living.addEffect(new MobEffectInstance(MobEffects.DARKNESS, 200, 1));

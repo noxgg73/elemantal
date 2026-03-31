@@ -39,7 +39,8 @@ public class ElementChoiceC2SPacket {
                                 .append(Component.literal(chosen.getDisplayName())
                                         .withStyle(chosen.getColor())));
                         // Sync to client
-                        ModMessages.sendToPlayer(new SyncElementS2CPacket(chosen.getId()), player);
+                        ModMessages.sendToPlayer(new SyncElementS2CPacket(
+                                chosen.getId(), data.getLevel(), data.getXp(), data.getSouls()), player);
                     });
                 }
             }
