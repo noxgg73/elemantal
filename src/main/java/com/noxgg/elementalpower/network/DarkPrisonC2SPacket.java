@@ -36,13 +36,42 @@ public class DarkPrisonC2SPacket {
 
             player.getCapability(PlayerElementProvider.PLAYER_ELEMENT).ifPresent(data -> {
                 ElementType element = data.getElement();
-                if (element != ElementType.DARKNESS && element != ElementType.POISON && element != ElementType.ROYAL) {
+                if (element != ElementType.DARKNESS && element != ElementType.POISON
+                        && element != ElementType.ROYAL && element != ElementType.SPACE) {
                     player.sendSystemMessage(Component.literal("Ce sort n'est pas disponible pour ta classe!")
                             .withStyle(ChatFormatting.RED));
                     return;
                 }
 
                 ServerLevel level = player.serverLevel();
+
+                // SPACE: Black hole doesn't need a target
+                if (element == ElementType.SPACE) {
+                    Vec3 look = player.getLookAngle();
+                    Vec3 holePos = player.position().add(look.scale(10));
+
+                    com.noxgg.elementalpower.world.BlackHoleManager.addBlackHole(
+                            new com.noxgg.elementalpower.world.BlackHoleManager.BlackHole(
+                                    holePos.x, holePos.y + 2, holePos.z, 20.0,
+                                    level, player, 150)); // 7.5 seconds
+
+                    // Creation burst
+                    var voidDust = new net.minecraft.core.particles.DustParticleOptions(
+                            new org.joml.Vector3f(0.2f, 0.0f, 0.3f), 3.0f);
+                    level.sendParticles(voidDust, holePos.x, holePos.y + 2, holePos.z, 60, 2, 2, 2, 0.1);
+                    level.sendParticles(ParticleTypes.REVERSE_PORTAL, holePos.x, holePos.y + 2, holePos.z, 40, 1, 1, 1, 0.2);
+                    level.sendParticles(ParticleTypes.FLASH, holePos.x, holePos.y + 2, holePos.z, 2, 0, 0, 0, 0);
+
+                    level.playSound(null, player.blockPosition(), SoundEvents.END_PORTAL_SPAWN, SoundSource.PLAYERS, 2.0f, 0.3f);
+                    level.playSound(null, player.blockPosition(), SoundEvents.WARDEN_SONIC_BOOM, SoundSource.PLAYERS, 1.0f, 0.3f);
+
+                    player.sendSystemMessage(net.minecraft.network.chat.Component.literal(">> Trou Noir invoque! ")
+                            .withStyle(ChatFormatting.DARK_PURPLE, ChatFormatting.BOLD)
+                            .append(net.minecraft.network.chat.Component.literal("Il aspire tout pendant 7.5 secondes!")
+                                    .withStyle(ChatFormatting.LIGHT_PURPLE)));
+                    return;
+                }
+
                 Vec3 eye = player.getEyePosition();
                 Vec3 look = player.getLookAngle();
 
