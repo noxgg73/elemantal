@@ -85,16 +85,101 @@ public class UseElementPowerC2SPacket {
                         level.playSound(null, player.blockPosition(), SoundEvents.ENDERMAN_TELEPORT, SoundSource.PLAYERS, 1.0f, 1.0f);
                     }
                     case TIME -> {
-                        // Slow all nearby entities
-                        level.getEntities(player, player.getBoundingBox().inflate(10), e -> e != player)
-                                .forEach(e -> {
-                                    if (e instanceof net.minecraft.world.entity.LivingEntity living) {
-                                        living.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 200, 4));
-                                        living.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 200, 2));
-                                    }
-                                });
-                        player.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SPEED, 200, 3));
-                        level.playSound(null, player.blockPosition(), SoundEvents.BELL_RESONATE, SoundSource.PLAYERS, 1.0f, 0.5f);
+                        // GIANT GREEN TIME DOME - 50 blocks radius, paralyzes all mobs
+                        double domeRadius = 25.0; // radius = 25 -> diameter = 50
+                        double cx = player.getX();
+                        double cy = player.getY();
+                        double cz = player.getZ();
+
+                        // === DOME SHELL made of green particles ===
+                        // Horizontal rings at different heights
+                        for (double phi = 0; phi < Math.PI; phi += 0.06) {
+                            double ringRadius = Math.sin(phi) * domeRadius;
+                            double ringY = cy + Math.cos(phi) * domeRadius;
+                            int points = (int)(ringRadius * 2.5);
+                            if (points < 8) points = 8;
+                            for (int p = 0; p < points; p++) {
+                                double theta = (Math.PI * 2.0 / points) * p;
+                                double px = cx + Math.cos(theta) * ringRadius;
+                                double pz = cz + Math.sin(theta) * ringRadius;
+                                // Green happy villager particles for the dome surface
+                                level.sendParticles(net.minecraft.core.particles.ParticleTypes.HAPPY_VILLAGER,
+                                        px, ringY, pz, 1, 0, 0, 0, 0);
+                            }
+                        }
+
+                        // Vertical meridian lines for extra visibility
+                        for (int m = 0; m < 12; m++) {
+                            double theta = (Math.PI * 2.0 / 12) * m;
+                            for (double phi = 0; phi < Math.PI; phi += 0.08) {
+                                double px = cx + Math.cos(theta) * Math.sin(phi) * domeRadius;
+                                double py = cy + Math.cos(phi) * domeRadius;
+                                double pz = cz + Math.sin(theta) * Math.sin(phi) * domeRadius;
+                                level.sendParticles(net.minecraft.core.particles.ParticleTypes.COMPOSTER,
+                                        px, py, pz, 1, 0, 0, 0, 0);
+                            }
+                        }
+
+                        // Ground circle edge
+                        for (double angle = 0; angle < Math.PI * 2; angle += 0.04) {
+                            double gx = cx + Math.cos(angle) * domeRadius;
+                            double gz = cz + Math.sin(angle) * domeRadius;
+                            level.sendParticles(net.minecraft.core.particles.ParticleTypes.HAPPY_VILLAGER,
+                                    gx, cy + 0.2, gz, 2, 0.1, 0.05, 0.1, 0);
+                            level.sendParticles(net.minecraft.core.particles.ParticleTypes.COMPOSTER,
+                                    gx, cy + 0.2, gz, 1, 0.05, 0.05, 0.05, 0);
+                        }
+
+                        // Center pillar of time energy
+                        for (double h = 0; h < domeRadius * 2; h += 0.5) {
+                            level.sendParticles(net.minecraft.core.particles.ParticleTypes.HAPPY_VILLAGER,
+                                    cx, cy - domeRadius + h, cz, 2, 0.2, 0, 0.2, 0.01);
+                        }
+
+                        // Inner pulse rings (expanding shockwave)
+                        for (double r = 2; r < domeRadius; r += 3) {
+                            int pts = (int)(r * 4);
+                            for (int p = 0; p < pts; p++) {
+                                double angle = (Math.PI * 2.0 / pts) * p;
+                                level.sendParticles(net.minecraft.core.particles.ParticleTypes.COMPOSTER,
+                                        cx + Math.cos(angle) * r, cy + 0.5, cz + Math.sin(angle) * r,
+                                        1, 0, 0.1, 0, 0);
+                            }
+                        }
+
+                        // === PARALYZE all mobs inside the dome ===
+                        level.getEntities(player, player.getBoundingBox().inflate(domeRadius), e -> {
+                            if (e == player) return false;
+                            double dx = e.getX() - cx;
+                            double dy = e.getY() - cy;
+                            double dz = e.getZ() - cz;
+                            return (dx * dx + dy * dy + dz * dz) <= domeRadius * domeRadius;
+                        }).forEach(e -> {
+                            if (e instanceof net.minecraft.world.entity.LivingEntity living) {
+                                // Total paralysis
+                                living.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 300, 127));
+                                living.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 300, 127));
+                                living.addEffect(new MobEffectInstance(MobEffects.DIG_SLOWDOWN, 300, 127));
+                                living.addEffect(new MobEffectInstance(MobEffects.JUMP, 300, 128));
+                                // Freeze in place
+                                living.setDeltaMovement(0, 0, 0);
+                                living.hurtMarked = true;
+                                // Green frozen particles on each mob
+                                level.sendParticles(net.minecraft.core.particles.ParticleTypes.HAPPY_VILLAGER,
+                                        living.getX(), living.getY() + 1, living.getZ(), 10, 0.3, 0.5, 0.3, 0.02);
+                                level.sendParticles(net.minecraft.core.particles.ParticleTypes.COMPOSTER,
+                                        living.getX(), living.getY() + 0.5, living.getZ(), 5, 0.2, 0.3, 0.2, 0.01);
+                            }
+                        });
+
+                        // Player gets speed inside the dome
+                        player.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SPEED, 300, 4));
+                        player.addEffect(new MobEffectInstance(MobEffects.DIG_SPEED, 300, 3));
+
+                        // Sounds: time stop effect
+                        level.playSound(null, player.blockPosition(), SoundEvents.BELL_RESONATE, SoundSource.PLAYERS, 2.0f, 0.3f);
+                        level.playSound(null, player.blockPosition(), SoundEvents.ELDER_GUARDIAN_CURSE, SoundSource.PLAYERS, 1.0f, 0.5f);
+                        level.playSound(null, player.blockPosition(), SoundEvents.END_PORTAL_SPAWN, SoundSource.PLAYERS, 0.5f, 2.0f);
                     }
                     case POISON -> {
                         // Poison all nearby enemies
