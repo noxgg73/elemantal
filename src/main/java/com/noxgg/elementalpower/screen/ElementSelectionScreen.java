@@ -12,7 +12,8 @@ public class ElementSelectionScreen extends Screen {
     private static final ElementType[] ELEMENTS = {
             ElementType.FIRE, ElementType.WATER, ElementType.EARTH, ElementType.AIR,
             ElementType.SPACE, ElementType.TIME, ElementType.POISON, ElementType.DARKNESS,
-            ElementType.LIGHT, ElementType.DEMON, ElementType.NATURE, ElementType.LIGHTNING
+            ElementType.LIGHT, ElementType.DEMON, ElementType.NATURE, ElementType.LIGHTNING,
+            ElementType.ROYAL
     };
 
     private ElementType hoveredElement = null;

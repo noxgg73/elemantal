@@ -262,6 +262,12 @@ public class ElementEvents {
                     player.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SPEED, bonusDuration, 1 + bonusAmplifier, false, false));
                     if (level >= 20) player.addEffect(new MobEffectInstance(MobEffects.DAMAGE_BOOST, bonusDuration, 0, false, false));
                 }
+                case ROYAL -> {
+                    player.addEffect(new MobEffectInstance(MobEffects.DAMAGE_BOOST, bonusDuration, bonusAmplifier, false, false));
+                    player.addEffect(new MobEffectInstance(MobEffects.DAMAGE_RESISTANCE, bonusDuration, bonusAmplifier, false, false));
+                    player.addEffect(new MobEffectInstance(MobEffects.HERO_OF_THE_VILLAGE, bonusDuration, 0, false, false));
+                    if (level >= 20) player.addEffect(new MobEffectInstance(MobEffects.ABSORPTION, bonusDuration, 1, false, false));
+                }
             }
 
             // Show level in actionbar every 15 seconds

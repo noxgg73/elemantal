@@ -15,7 +15,8 @@ public enum ElementType {
     LIGHT("light", "Lumiere", ChatFormatting.AQUA, 0xFFFFAA),
     DEMON("demon", "Demon", ChatFormatting.DARK_RED, 0x8B0000),
     NATURE("nature", "Nature", ChatFormatting.GREEN, 0x228B22),
-    LIGHTNING("lightning", "Foudre", ChatFormatting.YELLOW, 0xFFFF00);
+    LIGHTNING("lightning", "Foudre", ChatFormatting.YELLOW, 0xFFFF00),
+    ROYAL("royal", "Royal", ChatFormatting.GOLD, 0xFFD700);
 
     private final String id;
     private final String displayName;
@@ -48,6 +49,7 @@ public enum ElementType {
             case DEMON -> "Puissance demoniaque. Force surhumaine, aura de feu.";
             case NATURE -> "Maitrise de la nature. Regeneration rapide, epines.";
             case LIGHTNING -> "Maitrise de la foudre. Invoque la foudre, vitesse eclair.";
+            case ROYAL -> "Pouvoir royal. Force, resistance, aura doree, couronne de puissance.";
             case NONE -> "Aucun element selectionne.";
         };
     }
