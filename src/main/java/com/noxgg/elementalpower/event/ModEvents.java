@@ -4,6 +4,7 @@ import com.noxgg.elementalpower.ElementalPowerMod;
 import com.noxgg.elementalpower.item.ElementalArmorItem;
 import com.noxgg.elementalpower.item.ElementalWandItem;
 import com.noxgg.elementalpower.world.BlackHoleManager;
+import com.noxgg.elementalpower.world.CarnivorousFlowerManager;
 import com.noxgg.elementalpower.world.SoulTsunamiManager;
 import com.noxgg.elementalpower.world.DarkPrisonManager;
 import com.noxgg.elementalpower.world.PoisonDragonManager;
@@ -37,6 +38,7 @@ public class ModEvents {
             PoisonDragonManager.tick();
             BlackHoleManager.tick();
             SoulTsunamiManager.tick();
+            CarnivorousFlowerManager.tick();
         }
     }
 

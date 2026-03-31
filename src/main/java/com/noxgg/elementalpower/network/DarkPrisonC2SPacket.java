@@ -5,6 +5,7 @@ import com.noxgg.elementalpower.element.PlayerElementProvider;
 import com.noxgg.elementalpower.world.DarkPrisonManager;
 import com.noxgg.elementalpower.world.PoisonDragonManager;
 import net.minecraft.ChatFormatting;
+import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.Component;
@@ -38,7 +39,7 @@ public class DarkPrisonC2SPacket {
                 ElementType element = data.getElement();
                 if (element != ElementType.DARKNESS && element != ElementType.POISON
                         && element != ElementType.ROYAL && element != ElementType.SPACE
-                        && element != ElementType.DEMON) {
+                        && element != ElementType.DEMON && element != ElementType.NATURE) {
                     player.sendSystemMessage(Component.literal("Ce sort n'est pas disponible pour ta classe!")
                             .withStyle(ChatFormatting.RED));
                     return;
@@ -70,6 +71,51 @@ public class DarkPrisonC2SPacket {
                             .withStyle(ChatFormatting.DARK_PURPLE, ChatFormatting.BOLD)
                             .append(net.minecraft.network.chat.Component.literal("Il aspire tout pendant 7.5 secondes!")
                                     .withStyle(ChatFormatting.LIGHT_PURPLE)));
+                    return;
+                }
+
+                // NATURE: Carnivorous Flower
+                if (element == ElementType.NATURE) {
+                    Vec3 look = player.getLookAngle();
+                    Vec3 flowerPos = player.position().add(new Vec3(look.x, 0, look.z).normalize().scale(5));
+
+                    // Place the flower block
+                    BlockPos fPos = BlockPos.containing(flowerPos.x, flowerPos.y, flowerPos.z);
+                    // Find ground level
+                    for (int dy = 2; dy > -3; dy--) {
+                        BlockPos check = fPos.above(dy);
+                        if (level.getBlockState(check).isAir() && !level.getBlockState(check.below()).isAir()) {
+                            fPos = check;
+                            break;
+                        }
+                    }
+                    level.setBlock(fPos, net.minecraft.world.level.block.Blocks.WITHER_ROSE.defaultBlockState(), 3);
+
+                    com.noxgg.elementalpower.world.CarnivorousFlowerManager.addFlower(
+                            new com.noxgg.elementalpower.world.CarnivorousFlowerManager.CarnivorousFlower(
+                                    fPos.getX() + 0.5, fPos.getY(), fPos.getZ() + 0.5,
+                                    7.0, level, player, true));
+
+                    // Spawn particles
+                    var mossGreen = new net.minecraft.core.particles.DustParticleOptions(
+                            new org.joml.Vector3f(0.2f, 0.6f, 0.1f), 2.0f);
+                    level.sendParticles(mossGreen,
+                            fPos.getX() + 0.5, fPos.getY() + 1, fPos.getZ() + 0.5,
+                            40, 1, 1, 1, 0.05);
+                    level.sendParticles(ParticleTypes.HAPPY_VILLAGER,
+                            fPos.getX() + 0.5, fPos.getY() + 1, fPos.getZ() + 0.5,
+                            25, 1.5, 0.5, 1.5, 0.05);
+                    level.sendParticles(ParticleTypes.SPORE_BLOSSOM_AIR,
+                            fPos.getX() + 0.5, fPos.getY() + 2, fPos.getZ() + 0.5,
+                            15, 2, 1, 2, 0.02);
+
+                    level.playSound(null, fPos, SoundEvents.FLOWERING_AZALEA_PLACE, SoundSource.PLAYERS, 2.0f, 0.5f);
+                    level.playSound(null, fPos, SoundEvents.SCULK_BLOCK_SPREAD, SoundSource.PLAYERS, 1.5f, 0.8f);
+
+                    player.sendSystemMessage(net.minecraft.network.chat.Component.literal(">> Fleur Carnivore invoquee! ")
+                            .withStyle(net.minecraft.ChatFormatting.GREEN, net.minecraft.ChatFormatting.BOLD)
+                            .append(net.minecraft.network.chat.Component.literal("Elle paralyse et digere les proies. Detruisez la fleur pour tout arreter.")
+                                    .withStyle(net.minecraft.ChatFormatting.DARK_GREEN)));
                     return;
                 }
 
