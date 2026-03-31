@@ -84,6 +84,12 @@ public class ModMessages {
                 .consumerMainThread(DemonPortalC2SPacket::handle)
                 .add();
 
+        net.messageBuilder(SpiritStrangleC2SPacket.class, id(), NetworkDirection.PLAY_TO_SERVER)
+                .decoder(SpiritStrangleC2SPacket::new)
+                .encoder(SpiritStrangleC2SPacket::toBytes)
+                .consumerMainThread(SpiritStrangleC2SPacket::handle)
+                .add();
+
         net.messageBuilder(DreamSequenceS2CPacket.class, id(), NetworkDirection.PLAY_TO_CLIENT)
                 .decoder(DreamSequenceS2CPacket::new)
                 .encoder(DreamSequenceS2CPacket::toBytes)

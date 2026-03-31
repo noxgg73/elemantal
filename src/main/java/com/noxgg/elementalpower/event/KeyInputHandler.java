@@ -4,6 +4,7 @@ import com.mojang.blaze3d.platform.InputConstants;
 import com.noxgg.elementalpower.ElementalPowerMod;
 import com.noxgg.elementalpower.network.DarkPrisonC2SPacket;
 import com.noxgg.elementalpower.network.ModMessages;
+import com.noxgg.elementalpower.network.SpiritStrangleC2SPacket;
 import com.noxgg.elementalpower.network.UseElementPowerC2SPacket;
 import com.noxgg.elementalpower.network.VisitPrisonC2SPacket;
 import net.minecraft.client.KeyMapping;
@@ -54,6 +55,18 @@ public class KeyInputHandler {
 
     @Mod.EventBusSubscriber(modid = ElementalPowerMod.MOD_ID, value = Dist.CLIENT)
     public static class ClientForgeEvents {
+        @SubscribeEvent
+        public static void onMouseInput(net.minecraftforge.client.event.InputEvent.MouseButton.Pre event) {
+            // Right click (button 1) while in spirit form -> strangle
+            if (event.getButton() == 1 && event.getAction() == 1) {
+                if (Minecraft.getInstance().player != null &&
+                        Minecraft.getInstance().player.isInvisible() &&
+                        Minecraft.getInstance().player.getMainHandItem().isEmpty()) {
+                    ModMessages.sendToServer(new SpiritStrangleC2SPacket());
+                }
+            }
+        }
+
         @SubscribeEvent
         public static void onKeyInput(InputEvent.Key event) {
             if (USE_POWER_KEY.consumeClick()) {

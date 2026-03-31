@@ -39,7 +39,8 @@ public class DarkPrisonC2SPacket {
                 ElementType element = data.getElement();
                 if (element != ElementType.DARKNESS && element != ElementType.POISON
                         && element != ElementType.ROYAL && element != ElementType.SPACE
-                        && element != ElementType.DEMON && element != ElementType.NATURE) {
+                        && element != ElementType.DEMON && element != ElementType.NATURE
+                        && element != ElementType.AIR) {
                     player.sendSystemMessage(Component.literal("Ce sort n'est pas disponible pour ta classe!")
                             .withStyle(ChatFormatting.RED));
                     return;
@@ -71,6 +72,24 @@ public class DarkPrisonC2SPacket {
                             .withStyle(ChatFormatting.DARK_PURPLE, ChatFormatting.BOLD)
                             .append(net.minecraft.network.chat.Component.literal("Il aspire tout pendant 7.5 secondes!")
                                     .withStyle(ChatFormatting.LIGHT_PURPLE)));
+                    return;
+                }
+
+                // AIR: Spirit Form
+                if (element == ElementType.AIR) {
+                    if (com.noxgg.elementalpower.world.SpiritManager.isSpirit(player.getUUID())) {
+                        // Already spirit -> exit
+                        com.noxgg.elementalpower.world.SpiritManager.exitSpiritForm(player);
+                        player.sendSystemMessage(net.minecraft.network.chat.Component.literal(">> Forme d'esprit desactivee.")
+                                .withStyle(ChatFormatting.GRAY));
+                    } else {
+                        // Enter spirit form
+                        com.noxgg.elementalpower.world.SpiritManager.enterSpiritForm(player);
+                        player.sendSystemMessage(net.minecraft.network.chat.Component.literal(">> Forme d'Esprit activee! ")
+                                .withStyle(ChatFormatting.WHITE, ChatFormatting.BOLD)
+                                .append(net.minecraft.network.chat.Component.literal("Clic droit sur un mob pour l'etrangler. G pour annuler.")
+                                        .withStyle(ChatFormatting.GRAY)));
+                    }
                     return;
                 }
 
