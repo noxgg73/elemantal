@@ -65,6 +65,12 @@ public class ModMessages {
                 .encoder(RoyalJudgmentC2SPacket::toBytes)
                 .consumerMainThread(RoyalJudgmentC2SPacket::handle)
                 .add();
+
+        net.messageBuilder(VisitPrisonC2SPacket.class, id(), NetworkDirection.PLAY_TO_SERVER)
+                .decoder(VisitPrisonC2SPacket::new)
+                .encoder(VisitPrisonC2SPacket::toBytes)
+                .consumerMainThread(VisitPrisonC2SPacket::handle)
+                .add();
     }
 
     public static <MSG> void sendToServer(MSG message) {
