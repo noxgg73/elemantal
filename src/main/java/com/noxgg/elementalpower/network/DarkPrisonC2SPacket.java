@@ -141,85 +141,60 @@ public class DarkPrisonC2SPacket {
                                     .withStyle(ChatFormatting.GREEN)));
 
                 } else if (element == ElementType.ROYAL) {
-                    // === ROYAL JUDGMENT: golden execution ===
+                    // === ROYAL JUDGMENT: paralyze all in front + open choice screen ===
+                    Vec3 flatLook = new Vec3(player.getLookAngle().x, 0, player.getLookAngle().z).normalize();
+                    Vec3 playerPos = player.position();
+
                     var goldDust = new net.minecraft.core.particles.DustParticleOptions(
                             new org.joml.Vector3f(1.0f, 0.84f, 0.0f), 2.0f);
-                    var whiteDust = new net.minecraft.core.particles.DustParticleOptions(
-                            new org.joml.Vector3f(1.0f, 1.0f, 0.85f), 1.5f);
 
-                    // Golden beam from player to target (royal decree)
-                    Vec3 targetPos = target.position();
-                    for (int i = 0; i < 20; i++) {
-                        double t = i / 20.0;
-                        double px = player.getX() + (targetPos.x - player.getX()) * t;
-                        double py = player.getEyeY() + (targetPos.y + 1 - player.getEyeY()) * t;
-                        double pz = player.getZ() + (targetPos.z - player.getZ()) * t;
-                        level.sendParticles(goldDust, px, py, pz, 3, 0.03, 0.03, 0.03, 0.01);
-                        level.sendParticles(ParticleTypes.END_ROD, px, py, pz, 1, 0.02, 0.02, 0.02, 0.005);
-                    }
+                    // Find all entities in 4 blocks in front
+                    java.util.List<Integer> paralyzedIds = new java.util.ArrayList<>();
 
-                    // Lift the target up
-                    target.teleportTo(target.getX(), target.getY() + 5, target.getZ());
-                    target.setDeltaMovement(0, 0, 0);
-                    target.hurtMarked = true;
+                    level.getEntities(player, player.getBoundingBox().inflate(5), e -> {
+                        if (e == player || !(e instanceof LivingEntity)) return false;
+                        Vec3 toE = e.position().subtract(playerPos);
+                        Vec3 flatToE = new Vec3(toE.x, 0, toE.z);
+                        double dist = flatToE.length();
+                        if (dist > 4.0 || dist < 0.3) return false;
+                        return flatLook.dot(flatToE.normalize()) > 0.5;
+                    }).forEach(e -> {
+                        if (e instanceof LivingEntity living) {
+                            // Paralyze
+                            living.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 600, 127));
+                            living.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 600, 127));
+                            living.addEffect(new MobEffectInstance(MobEffects.GLOWING, 600, 0));
+                            living.setDeltaMovement(0, 0, 0);
+                            living.hurtMarked = true;
 
-                    // Golden cage around the target (4 pillars + top)
-                    double tx = target.getX();
-                    double ty = target.getY();
-                    double tz = target.getZ();
-                    for (int pillar = 0; pillar < 4; pillar++) {
-                        double pAngle = (Math.PI * 2 / 4) * pillar + Math.PI / 4;
-                        double pDist = 1.5;
-                        double pillarX = tx + Math.cos(pAngle) * pDist;
-                        double pillarZ = tz + Math.sin(pAngle) * pDist;
-                        for (double h = -2; h < 3; h += 0.3) {
-                            level.sendParticles(goldDust, pillarX, ty + h, pillarZ, 2, 0.02, 0.02, 0.02, 0.001);
+                            // Golden chains on entity
+                            level.sendParticles(goldDust,
+                                    living.getX(), living.getY() + 1, living.getZ(),
+                                    15, 0.3, 0.5, 0.3, 0.02);
+                            level.sendParticles(ParticleTypes.END_ROD,
+                                    living.getX(), living.getY() + 0.5, living.getZ(),
+                                    5, 0.2, 0.3, 0.2, 0.01);
+
+                            paralyzedIds.add(e.getId());
                         }
+                    });
+
+                    if (paralyzedIds.isEmpty()) {
+                        player.sendSystemMessage(Component.literal("Aucun sujet devant vous!")
+                                .withStyle(ChatFormatting.GRAY));
+                    } else {
+                        // Open judgment screen
+                        ModMessages.sendToPlayer(new OpenRoyalScreenS2CPacket(paralyzedIds), player);
+
+                        // Royal fanfare
+                        level.playSound(null, player.blockPosition(), SoundEvents.UI_TOAST_CHALLENGE_COMPLETE, SoundSource.PLAYERS, 2.0f, 1.0f);
+                        level.playSound(null, player.blockPosition(), SoundEvents.GOAT_HORN_SOUND_VARIANTS.get(0).get(), SoundSource.PLAYERS, 2.0f, 0.8f);
+
+                        player.sendSystemMessage(Component.literal(">> Jugement Royal! ")
+                                .withStyle(ChatFormatting.GOLD, ChatFormatting.BOLD)
+                                .append(Component.literal("Choisissez le sort de vos prisonniers.")
+                                        .withStyle(ChatFormatting.YELLOW)));
                     }
-                    // Top cross
-                    for (double c = -1.5; c <= 1.5; c += 0.2) {
-                        level.sendParticles(goldDust, tx + c, ty + 3, tz, 1, 0.02, 0.02, 0.02, 0.001);
-                        level.sendParticles(goldDust, tx, ty + 3, tz + c, 1, 0.02, 0.02, 0.02, 0.001);
-                    }
-
-                    // Giant golden swords falling from above (3 swords)
-                    for (int sword = 0; sword < 3; sword++) {
-                        double sAngle = (Math.PI * 2 / 3) * sword;
-                        double sOffset = 1.0;
-                        double sx = tx + Math.cos(sAngle) * sOffset;
-                        double sz = tz + Math.sin(sAngle) * sOffset;
-                        // Sword blade (vertical line from high up)
-                        for (double h = 3; h < 12; h += 0.3) {
-                            level.sendParticles(goldDust, sx, ty + h, sz, 2, 0.02, 0, 0.02, 0.001);
-                            level.sendParticles(whiteDust, sx, ty + h, sz, 1, 0.01, 0, 0.01, 0.001);
-                        }
-                        // Sword guard (horizontal)
-                        for (double g = -0.5; g <= 0.5; g += 0.1) {
-                            level.sendParticles(goldDust, sx + g * Math.cos(sAngle + Math.PI / 2),
-                                    ty + 3, sz + g * Math.sin(sAngle + Math.PI / 2),
-                                    2, 0.01, 0.01, 0.01, 0.001);
-                        }
-                    }
-
-                    // Massive golden damage
-                    target.hurt(level.damageSources().magic(), 35.0f);
-                    target.addEffect(new MobEffectInstance(MobEffects.GLOWING, 400, 0));
-                    target.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 200, 4));
-                    target.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 200, 3));
-
-                    // Golden explosion on target
-                    level.sendParticles(goldDust, tx, ty + 1, tz, 50, 1.5, 1.5, 1.5, 0.15);
-                    level.sendParticles(ParticleTypes.TOTEM_OF_UNDYING, tx, ty + 1, tz, 30, 1, 2, 1, 0.3);
-                    level.sendParticles(ParticleTypes.END_ROD, tx, ty + 1, tz, 20, 1, 2, 1, 0.1);
-
-                    // Sounds
-                    level.playSound(null, target.blockPosition(), SoundEvents.UI_TOAST_CHALLENGE_COMPLETE, SoundSource.PLAYERS, 2.0f, 0.7f);
-                    level.playSound(null, target.blockPosition(), SoundEvents.ANVIL_LAND, SoundSource.PLAYERS, 1.5f, 0.6f);
-
-                    player.sendSystemMessage(Component.literal(">> Jugement Royal prononce! ")
-                            .withStyle(ChatFormatting.GOLD, ChatFormatting.BOLD)
-                            .append(Component.literal("L'ennemi est condamne!")
-                                    .withStyle(ChatFormatting.YELLOW)));
                 }
             });
         });
