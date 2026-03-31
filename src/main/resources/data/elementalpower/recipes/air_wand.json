@@ -1,0 +1,9 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": ["  C", " S ", "S  "],
+  "key": {
+    "C": { "item": "elementalpower:air_crystal" },
+    "S": { "item": "minecraft:stick" }
+  },
+  "result": { "item": "elementalpower:air_wand", "count": 1 }
+}

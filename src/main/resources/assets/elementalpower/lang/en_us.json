@@ -1,0 +1,52 @@
+{
+  "creativetab.elementalpower": "Elemental Power",
+
+  "block.elementalpower.fire_ore": "Fire Ore",
+  "block.elementalpower.water_ore": "Water Ore",
+  "block.elementalpower.earth_ore": "Earth Ore",
+  "block.elementalpower.air_ore": "Air Ore",
+  "block.elementalpower.fire_block": "Block of Fire Crystal",
+  "block.elementalpower.water_block": "Block of Water Crystal",
+  "block.elementalpower.earth_block": "Block of Earth Crystal",
+  "block.elementalpower.air_block": "Block of Air Crystal",
+
+  "item.elementalpower.fire_crystal": "Fire Crystal",
+  "item.elementalpower.water_crystal": "Water Crystal",
+  "item.elementalpower.earth_crystal": "Earth Crystal",
+  "item.elementalpower.air_crystal": "Air Crystal",
+
+  "item.elementalpower.fire_ingot": "Fire Ingot",
+  "item.elementalpower.water_ingot": "Water Ingot",
+  "item.elementalpower.earth_ingot": "Earth Ingot",
+  "item.elementalpower.air_ingot": "Air Ingot",
+
+  "item.elementalpower.fire_wand": "Fire Wand",
+  "item.elementalpower.water_wand": "Water Wand",
+  "item.elementalpower.earth_wand": "Earth Wand",
+  "item.elementalpower.air_wand": "Air Wand",
+
+  "item.elementalpower.fire_sword": "Fire Sword",
+  "item.elementalpower.water_sword": "Water Sword",
+  "item.elementalpower.earth_sword": "Earth Sword",
+  "item.elementalpower.air_sword": "Air Sword",
+
+  "item.elementalpower.fire_helmet": "Fire Helmet",
+  "item.elementalpower.fire_chestplate": "Fire Chestplate",
+  "item.elementalpower.fire_leggings": "Fire Leggings",
+  "item.elementalpower.fire_boots": "Fire Boots",
+
+  "item.elementalpower.water_helmet": "Water Helmet",
+  "item.elementalpower.water_chestplate": "Water Chestplate",
+  "item.elementalpower.water_leggings": "Water Leggings",
+  "item.elementalpower.water_boots": "Water Boots",
+
+  "item.elementalpower.earth_helmet": "Earth Helmet",
+  "item.elementalpower.earth_chestplate": "Earth Chestplate",
+  "item.elementalpower.earth_leggings": "Earth Leggings",
+  "item.elementalpower.earth_boots": "Earth Boots",
+
+  "item.elementalpower.air_helmet": "Air Helmet",
+  "item.elementalpower.air_chestplate": "Air Chestplate",
+  "item.elementalpower.air_leggings": "Air Leggings",
+  "item.elementalpower.air_boots": "Air Boots"
+}

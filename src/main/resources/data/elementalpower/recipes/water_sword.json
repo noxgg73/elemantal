@@ -1,0 +1,9 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": ["I", "I", "S"],
+  "key": {
+    "I": { "item": "elementalpower:water_ingot" },
+    "S": { "item": "minecraft:stick" }
+  },
+  "result": { "item": "elementalpower:water_sword", "count": 1 }
+}

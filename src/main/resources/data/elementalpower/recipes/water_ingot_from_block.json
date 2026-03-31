@@ -1,0 +1,5 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [{ "item": "elementalpower:water_block" }],
+  "result": { "item": "elementalpower:water_ingot", "count": 9 }
+}

@@ -1,0 +1,52 @@
+{
+  "creativetab.elementalpower": "Pouvoir Elementaire",
+
+  "block.elementalpower.fire_ore": "Minerai de Feu",
+  "block.elementalpower.water_ore": "Minerai d'Eau",
+  "block.elementalpower.earth_ore": "Minerai de Terre",
+  "block.elementalpower.air_ore": "Minerai d'Air",
+  "block.elementalpower.fire_block": "Bloc de Cristal de Feu",
+  "block.elementalpower.water_block": "Bloc de Cristal d'Eau",
+  "block.elementalpower.earth_block": "Bloc de Cristal de Terre",
+  "block.elementalpower.air_block": "Bloc de Cristal d'Air",
+
+  "item.elementalpower.fire_crystal": "Cristal de Feu",
+  "item.elementalpower.water_crystal": "Cristal d'Eau",
+  "item.elementalpower.earth_crystal": "Cristal de Terre",
+  "item.elementalpower.air_crystal": "Cristal d'Air",
+
+  "item.elementalpower.fire_ingot": "Lingot de Feu",
+  "item.elementalpower.water_ingot": "Lingot d'Eau",
+  "item.elementalpower.earth_ingot": "Lingot de Terre",
+  "item.elementalpower.air_ingot": "Lingot d'Air",
+
+  "item.elementalpower.fire_wand": "Baguette de Feu",
+  "item.elementalpower.water_wand": "Baguette d'Eau",
+  "item.elementalpower.earth_wand": "Baguette de Terre",
+  "item.elementalpower.air_wand": "Baguette d'Air",
+
+  "item.elementalpower.fire_sword": "Epee de Feu",
+  "item.elementalpower.water_sword": "Epee d'Eau",
+  "item.elementalpower.earth_sword": "Epee de Terre",
+  "item.elementalpower.air_sword": "Epee d'Air",
+
+  "item.elementalpower.fire_helmet": "Casque de Feu",
+  "item.elementalpower.fire_chestplate": "Plastron de Feu",
+  "item.elementalpower.fire_leggings": "Jambieres de Feu",
+  "item.elementalpower.fire_boots": "Bottes de Feu",
+
+  "item.elementalpower.water_helmet": "Casque d'Eau",
+  "item.elementalpower.water_chestplate": "Plastron d'Eau",
+  "item.elementalpower.water_leggings": "Jambieres d'Eau",
+  "item.elementalpower.water_boots": "Bottes d'Eau",
+
+  "item.elementalpower.earth_helmet": "Casque de Terre",
+  "item.elementalpower.earth_chestplate": "Plastron de Terre",
+  "item.elementalpower.earth_leggings": "Jambieres de Terre",
+  "item.elementalpower.earth_boots": "Bottes de Terre",
+
+  "item.elementalpower.air_helmet": "Casque d'Air",
+  "item.elementalpower.air_chestplate": "Plastron d'Air",
+  "item.elementalpower.air_leggings": "Jambieres d'Air",
+  "item.elementalpower.air_boots": "Bottes d'Air"
+}

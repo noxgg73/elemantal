@@ -1,0 +1,6 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": ["III", "III", "III"],
+  "key": { "I": { "item": "elementalpower:earth_ingot" } },
+  "result": { "item": "elementalpower:earth_block", "count": 1 }
+}

@@ -1,0 +1,6 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": ["III", "I I", "I I"],
+  "key": { "I": { "item": "elementalpower:air_ingot" } },
+  "result": { "item": "elementalpower:air_leggings", "count": 1 }
+}

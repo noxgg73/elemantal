@@ -1,0 +1,13 @@
+{
+  "replace": false,
+  "values": [
+    "elementalpower:fire_ore",
+    "elementalpower:water_ore",
+    "elementalpower:earth_ore",
+    "elementalpower:air_ore",
+    "elementalpower:fire_block",
+    "elementalpower:water_block",
+    "elementalpower:earth_block",
+    "elementalpower:air_block"
+  ]
+}

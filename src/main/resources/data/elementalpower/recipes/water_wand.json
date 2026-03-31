@@ -1,0 +1,9 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": ["  C", " S ", "S  "],
+  "key": {
+    "C": { "item": "elementalpower:water_crystal" },
+    "S": { "item": "minecraft:stick" }
+  },
+  "result": { "item": "elementalpower:water_wand", "count": 1 }
+}

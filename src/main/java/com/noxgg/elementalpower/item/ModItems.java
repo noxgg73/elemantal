@@ -1,0 +1,124 @@
+package com.noxgg.elementalpower.item;
+
+import com.noxgg.elementalpower.ElementalPowerMod;
+import net.minecraft.world.item.ArmorItem;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.SwordItem;
+import net.minecraft.world.item.Tiers;
+import net.minecraftforge.eventbus.api.IEventBus;
+import net.minecraftforge.registries.DeferredRegister;
+import net.minecraftforge.registries.ForgeRegistries;
+import net.minecraftforge.registries.RegistryObject;
+
+public class ModItems {
+    public static final DeferredRegister<Item> ITEMS =
+            DeferredRegister.create(ForgeRegistries.ITEMS, ElementalPowerMod.MOD_ID);
+
+    // Elemental Crystals (dropped from ores)
+    public static final RegistryObject<Item> FIRE_CRYSTAL = ITEMS.register("fire_crystal",
+            () -> new Item(new Item.Properties()));
+    public static final RegistryObject<Item> WATER_CRYSTAL = ITEMS.register("water_crystal",
+            () -> new Item(new Item.Properties()));
+    public static final RegistryObject<Item> EARTH_CRYSTAL = ITEMS.register("earth_crystal",
+            () -> new Item(new Item.Properties()));
+    public static final RegistryObject<Item> AIR_CRYSTAL = ITEMS.register("air_crystal",
+            () -> new Item(new Item.Properties()));
+
+    // Elemental Ingots (smelted from crystals)
+    public static final RegistryObject<Item> FIRE_INGOT = ITEMS.register("fire_ingot",
+            () -> new Item(new Item.Properties()));
+    public static final RegistryObject<Item> WATER_INGOT = ITEMS.register("water_ingot",
+            () -> new Item(new Item.Properties()));
+    public static final RegistryObject<Item> EARTH_INGOT = ITEMS.register("earth_ingot",
+            () -> new Item(new Item.Properties()));
+    public static final RegistryObject<Item> AIR_INGOT = ITEMS.register("air_ingot",
+            () -> new Item(new Item.Properties()));
+
+    // Elemental Wands
+    public static final RegistryObject<Item> FIRE_WAND = ITEMS.register("fire_wand",
+            () -> new ElementalWandItem(new Item.Properties().stacksTo(1).durability(200),
+                    ElementalWandItem.Element.FIRE));
+    public static final RegistryObject<Item> WATER_WAND = ITEMS.register("water_wand",
+            () -> new ElementalWandItem(new Item.Properties().stacksTo(1).durability(200),
+                    ElementalWandItem.Element.WATER));
+    public static final RegistryObject<Item> EARTH_WAND = ITEMS.register("earth_wand",
+            () -> new ElementalWandItem(new Item.Properties().stacksTo(1).durability(200),
+                    ElementalWandItem.Element.EARTH));
+    public static final RegistryObject<Item> AIR_WAND = ITEMS.register("air_wand",
+            () -> new ElementalWandItem(new Item.Properties().stacksTo(1).durability(200),
+                    ElementalWandItem.Element.AIR));
+
+    // Elemental Swords
+    public static final RegistryObject<Item> FIRE_SWORD = ITEMS.register("fire_sword",
+            () -> new ElementalSwordItem(Tiers.DIAMOND, 5, -2.4f,
+                    new Item.Properties(), ElementalWandItem.Element.FIRE));
+    public static final RegistryObject<Item> WATER_SWORD = ITEMS.register("water_sword",
+            () -> new ElementalSwordItem(Tiers.DIAMOND, 4, -2.2f,
+                    new Item.Properties(), ElementalWandItem.Element.WATER));
+    public static final RegistryObject<Item> EARTH_SWORD = ITEMS.register("earth_sword",
+            () -> new ElementalSwordItem(Tiers.DIAMOND, 6, -2.6f,
+                    new Item.Properties(), ElementalWandItem.Element.EARTH));
+    public static final RegistryObject<Item> AIR_SWORD = ITEMS.register("air_sword",
+            () -> new ElementalSwordItem(Tiers.DIAMOND, 3, -1.8f,
+                    new Item.Properties(), ElementalWandItem.Element.AIR));
+
+    // Elemental Armor - Fire Set
+    public static final RegistryObject<Item> FIRE_HELMET = ITEMS.register("fire_helmet",
+            () -> new ElementalArmorItem(ModArmorMaterials.FIRE, ArmorItem.Type.HELMET,
+                    new Item.Properties(), ElementalWandItem.Element.FIRE));
+    public static final RegistryObject<Item> FIRE_CHESTPLATE = ITEMS.register("fire_chestplate",
+            () -> new ElementalArmorItem(ModArmorMaterials.FIRE, ArmorItem.Type.CHESTPLATE,
+                    new Item.Properties(), ElementalWandItem.Element.FIRE));
+    public static final RegistryObject<Item> FIRE_LEGGINGS = ITEMS.register("fire_leggings",
+            () -> new ElementalArmorItem(ModArmorMaterials.FIRE, ArmorItem.Type.LEGGINGS,
+                    new Item.Properties(), ElementalWandItem.Element.FIRE));
+    public static final RegistryObject<Item> FIRE_BOOTS = ITEMS.register("fire_boots",
+            () -> new ElementalArmorItem(ModArmorMaterials.FIRE, ArmorItem.Type.BOOTS,
+                    new Item.Properties(), ElementalWandItem.Element.FIRE));
+
+    // Elemental Armor - Water Set
+    public static final RegistryObject<Item> WATER_HELMET = ITEMS.register("water_helmet",
+            () -> new ElementalArmorItem(ModArmorMaterials.WATER, ArmorItem.Type.HELMET,
+                    new Item.Properties(), ElementalWandItem.Element.WATER));
+    public static final RegistryObject<Item> WATER_CHESTPLATE = ITEMS.register("water_chestplate",
+            () -> new ElementalArmorItem(ModArmorMaterials.WATER, ArmorItem.Type.CHESTPLATE,
+                    new Item.Properties(), ElementalWandItem.Element.WATER));
+    public static final RegistryObject<Item> WATER_LEGGINGS = ITEMS.register("water_leggings",
+            () -> new ElementalArmorItem(ModArmorMaterials.WATER, ArmorItem.Type.LEGGINGS,
+                    new Item.Properties(), ElementalWandItem.Element.WATER));
+    public static final RegistryObject<Item> WATER_BOOTS = ITEMS.register("water_boots",
+            () -> new ElementalArmorItem(ModArmorMaterials.WATER, ArmorItem.Type.BOOTS,
+                    new Item.Properties(), ElementalWandItem.Element.WATER));
+
+    // Elemental Armor - Earth Set
+    public static final RegistryObject<Item> EARTH_HELMET = ITEMS.register("earth_helmet",
+            () -> new ElementalArmorItem(ModArmorMaterials.EARTH, ArmorItem.Type.HELMET,
+                    new Item.Properties(), ElementalWandItem.Element.EARTH));
+    public static final RegistryObject<Item> EARTH_CHESTPLATE = ITEMS.register("earth_chestplate",
+            () -> new ElementalArmorItem(ModArmorMaterials.EARTH, ArmorItem.Type.CHESTPLATE,
+                    new Item.Properties(), ElementalWandItem.Element.EARTH));
+    public static final RegistryObject<Item> EARTH_LEGGINGS = ITEMS.register("earth_leggings",
+            () -> new ElementalArmorItem(ModArmorMaterials.EARTH, ArmorItem.Type.LEGGINGS,
+                    new Item.Properties(), ElementalWandItem.Element.EARTH));
+    public static final RegistryObject<Item> EARTH_BOOTS = ITEMS.register("earth_boots",
+            () -> new ElementalArmorItem(ModArmorMaterials.EARTH, ArmorItem.Type.BOOTS,
+                    new Item.Properties(), ElementalWandItem.Element.EARTH));
+
+    // Elemental Armor - Air Set
+    public static final RegistryObject<Item> AIR_HELMET = ITEMS.register("air_helmet",
+            () -> new ElementalArmorItem(ModArmorMaterials.AIR, ArmorItem.Type.HELMET,
+                    new Item.Properties(), ElementalWandItem.Element.AIR));
+    public static final RegistryObject<Item> AIR_CHESTPLATE = ITEMS.register("air_chestplate",
+            () -> new ElementalArmorItem(ModArmorMaterials.AIR, ArmorItem.Type.CHESTPLATE,
+                    new Item.Properties(), ElementalWandItem.Element.AIR));
+    public static final RegistryObject<Item> AIR_LEGGINGS = ITEMS.register("air_leggings",
+            () -> new ElementalArmorItem(ModArmorMaterials.AIR, ArmorItem.Type.LEGGINGS,
+                    new Item.Properties(), ElementalWandItem.Element.AIR));
+    public static final RegistryObject<Item> AIR_BOOTS = ITEMS.register("air_boots",
+            () -> new ElementalArmorItem(ModArmorMaterials.AIR, ArmorItem.Type.BOOTS,
+                    new Item.Properties(), ElementalWandItem.Element.AIR));
+
+    public static void register(IEventBus eventBus) {
+        ITEMS.register(eventBus);
+    }
+}

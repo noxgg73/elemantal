@@ -1,0 +1,5 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [{ "item": "elementalpower:earth_block" }],
+  "result": { "item": "elementalpower:earth_ingot", "count": 9 }
+}

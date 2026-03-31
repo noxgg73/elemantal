@@ -1,0 +1,6 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": ["I I", "III", "III"],
+  "key": { "I": { "item": "elementalpower:fire_ingot" } },
+  "result": { "item": "elementalpower:fire_chestplate", "count": 1 }
+}

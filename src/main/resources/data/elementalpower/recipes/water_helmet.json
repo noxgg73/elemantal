@@ -1,0 +1,6 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": ["III", "I I"],
+  "key": { "I": { "item": "elementalpower:water_ingot" } },
+  "result": { "item": "elementalpower:water_helmet", "count": 1 }
+}

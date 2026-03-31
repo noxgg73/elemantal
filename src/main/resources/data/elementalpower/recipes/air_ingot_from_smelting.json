@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:smelting",
+  "ingredient": { "item": "elementalpower:air_crystal" },
+  "result": "elementalpower:air_ingot",
+  "experience": 1.0,
+  "cookingtime": 200
+}

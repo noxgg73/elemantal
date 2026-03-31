@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:smelting",
+  "ingredient": { "item": "elementalpower:earth_crystal" },
+  "result": "elementalpower:earth_ingot",
+  "experience": 1.0,
+  "cookingtime": 200
+}

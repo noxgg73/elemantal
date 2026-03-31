@@ -1,0 +1,9 @@
+{
+  "replace": false,
+  "values": [
+    "elementalpower:fire_ore",
+    "elementalpower:water_ore",
+    "elementalpower:earth_ore",
+    "elementalpower:air_ore"
+  ]
+}
