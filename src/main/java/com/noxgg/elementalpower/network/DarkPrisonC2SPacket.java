@@ -94,7 +94,7 @@ public class DarkPrisonC2SPacket {
                     com.noxgg.elementalpower.world.CarnivorousFlowerManager.addFlower(
                             new com.noxgg.elementalpower.world.CarnivorousFlowerManager.CarnivorousFlower(
                                     fPos.getX() + 0.5, fPos.getY(), fPos.getZ() + 0.5,
-                                    7.0, level, player, true));
+                                    30.0, level, player, true));
 
                     // Spawn particles
                     var mossGreen = new net.minecraft.core.particles.DustParticleOptions(
