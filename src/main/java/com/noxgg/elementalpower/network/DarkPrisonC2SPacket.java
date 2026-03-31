@@ -117,15 +117,17 @@ public class DarkPrisonC2SPacket {
                     PoisonDragonManager.addAttack(new PoisonDragonManager.PoisonDragonAttack(
                             level, player, target));
 
-                    // Casting beam from player to target
+                    // Purple casting beam from player to target
                     Vec3 targetPos = target.position();
+                    var purpleDust = new net.minecraft.core.particles.DustParticleOptions(
+                            new org.joml.Vector3f(0.6f, 0.0f, 0.8f), 1.5f);
                     for (int i = 0; i < 15; i++) {
                         double t = i / 15.0;
                         double px = player.getX() + (targetPos.x - player.getX()) * t;
                         double py = player.getEyeY() + (targetPos.y + 1 - player.getEyeY()) * t;
                         double pz = player.getZ() + (targetPos.z - player.getZ()) * t;
-                        level.sendParticles(ParticleTypes.ITEM_SLIME,
-                                px, py, pz, 3, 0.05, 0.05, 0.05, 0.02);
+                        level.sendParticles(purpleDust, px, py, pz, 3, 0.05, 0.05, 0.05, 0.02);
+                        level.sendParticles(ParticleTypes.WITCH, px, py, pz, 1, 0.05, 0.05, 0.05, 0.01);
                     }
 
                     level.playSound(null, target.blockPosition(), SoundEvents.ENDER_DRAGON_GROWL, SoundSource.PLAYERS, 1.5f, 0.6f);
