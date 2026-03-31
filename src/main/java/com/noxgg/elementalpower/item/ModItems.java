@@ -123,6 +123,11 @@ public class ModItems {
             () -> new RoyalCrownItem(ModArmorMaterials.FIRE, ArmorItem.Type.HELMET,
                     new Item.Properties().rarity(net.minecraft.world.item.Rarity.EPIC)));
 
+    // Soul Scythe (Darkness class weapon)
+    public static final RegistryObject<Item> SOUL_SCYTHE = ITEMS.register("soul_scythe",
+            () -> new SoulScytheItem(net.minecraft.world.item.Tiers.NETHERITE, 8, -2.8f,
+                    new Item.Properties().rarity(net.minecraft.world.item.Rarity.EPIC)));
+
     // Soul Contract (dream quest item)
     public static final RegistryObject<Item> SOUL_CONTRACT = ITEMS.register("soul_contract",
             () -> new Item(new Item.Properties().stacksTo(1).rarity(net.minecraft.world.item.Rarity.RARE)) {

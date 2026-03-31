@@ -76,6 +76,9 @@ public class ModCreativeTabs {
                         // Royal Crown
                         output.accept(ModItems.ROYAL_CROWN.get());
 
+                        // Soul Scythe
+                        output.accept(ModItems.SOUL_SCYTHE.get());
+
                         // Soul Contract
                         output.accept(ModItems.SOUL_CONTRACT.get());
 

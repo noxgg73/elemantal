@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    " DD",
+    "DS ",
+    " S "
+  ],
+  "key": {
+    "D": { "item": "elementalpower:fire_ingot" },
+    "S": { "item": "minecraft:stick" }
+  },
+  "result": {
+    "item": "elementalpower:soul_scythe",
+    "count": 1
+  }
+}
