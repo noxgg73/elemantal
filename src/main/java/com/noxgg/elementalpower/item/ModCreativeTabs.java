@@ -73,6 +73,9 @@ public class ModCreativeTabs {
                         output.accept(ModItems.EARTH_LEGGINGS.get());
                         output.accept(ModItems.EARTH_BOOTS.get());
 
+                        // Reset Pearl
+                        output.accept(ModItems.ELEMENT_RESET_PEARL.get());
+
                         // Air Armor
                         output.accept(ModItems.AIR_HELMET.get());
                         output.accept(ModItems.AIR_CHESTPLATE.get());

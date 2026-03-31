@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "FWE",
+    "ANA",
+    "EWF"
+  ],
+  "key": {
+    "F": { "item": "elementalpower:fire_crystal" },
+    "W": { "item": "elementalpower:water_crystal" },
+    "E": { "item": "elementalpower:earth_crystal" },
+    "A": { "item": "elementalpower:air_crystal" },
+    "N": { "item": "minecraft:nether_star" }
+  },
+  "result": {
+    "item": "elementalpower:element_reset_pearl",
+    "count": 1
+  }
+}

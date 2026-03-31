@@ -118,6 +118,10 @@ public class ModItems {
             () -> new ElementalArmorItem(ModArmorMaterials.AIR, ArmorItem.Type.BOOTS,
                     new Item.Properties(), ElementalWandItem.Element.AIR));
 
+    // Element Reset Pearl
+    public static final RegistryObject<Item> ELEMENT_RESET_PEARL = ITEMS.register("element_reset_pearl",
+            () -> new ElementResetPearlItem(new Item.Properties().stacksTo(1).rarity(net.minecraft.world.item.Rarity.EPIC)));
+
     public static void register(IEventBus eventBus) {
         ITEMS.register(eventBus);
     }
