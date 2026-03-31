@@ -2,6 +2,7 @@ package com.noxgg.elementalpower;
 
 import com.mojang.logging.LogUtils;
 import com.noxgg.elementalpower.block.ModBlocks;
+import com.noxgg.elementalpower.entity.ModEntities;
 import com.noxgg.elementalpower.item.ModItems;
 import com.noxgg.elementalpower.item.ModCreativeTabs;
 import com.noxgg.elementalpower.network.ModMessages;
@@ -27,6 +28,7 @@ public class ElementalPowerMod {
         ModBlocks.register(modEventBus);
         ModItems.register(modEventBus);
         ModCreativeTabs.register(modEventBus);
+        ModEntities.register(modEventBus);
 
         modEventBus.addListener(this::commonSetup);
         MinecraftForge.EVENT_BUS.register(this);

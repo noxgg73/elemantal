@@ -73,8 +73,9 @@ public class ModCreativeTabs {
                         output.accept(ModItems.EARTH_LEGGINGS.get());
                         output.accept(ModItems.EARTH_BOOTS.get());
 
-                        // Royal Crown
+                        // Royal Crown & Throne
                         output.accept(ModItems.ROYAL_CROWN.get());
+                        output.accept(ModBlocks.GOLDEN_THRONE.get());
 
                         // Reset Pearl
                         output.accept(ModItems.ELEMENT_RESET_PEARL.get());

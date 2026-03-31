@@ -81,6 +81,15 @@ public class ModBlocks {
                     .strength(5.0f, 8.0f)
                     .sound(SoundType.METAL)));
 
+    // Golden Throne
+    public static final RegistryObject<Block> GOLDEN_THRONE = registerBlock("golden_throne",
+            () -> new GoldenThroneBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.GOLD)
+                    .strength(5.0f, 10.0f)
+                    .sound(SoundType.METAL)
+                    .lightLevel(state -> 5)
+                    .noOcclusion()));
+
     private static <T extends Block> RegistryObject<T> registerBlock(String name, Supplier<T> block) {
         RegistryObject<T> toReturn = BLOCKS.register(name, block);
         registerBlockItem(name, toReturn);
