@@ -108,69 +108,153 @@ public class UseElementPowerC2SPacket {
                         level.playSound(null, player.blockPosition(), SoundEvents.SPIDER_AMBIENT, SoundSource.PLAYERS, 1.0f, 0.8f);
                     }
                     case DARKNESS -> {
-                        // Giant Shadow Hand - crushes the nearest enemy
+                        // GIANT SHADOW HAND - real hand shape made of particles
                         Vec3 lookDir = player.getLookAngle();
-                        Vec3 handTarget = player.position().add(lookDir.scale(8));
+                        Vec3 flatLook = new Vec3(lookDir.x, 0, lookDir.z).normalize();
+                        Vec3 handCenter = player.position().add(flatLook.scale(8));
+                        double baseY = handCenter.y;
 
-                        // Find nearest entity in look direction
-                        var nearbyEntities = level.getEntities(player,
-                                new AABB(handTarget.x - 5, handTarget.y - 5, handTarget.z - 5,
-                                        handTarget.x + 5, handTarget.y + 5, handTarget.z + 5),
-                                e -> e instanceof net.minecraft.world.entity.LivingEntity && e != player);
+                        // Perpendicular direction for hand width
+                        double perpX = -flatLook.z;
+                        double perpZ = flatLook.x;
 
-                        // Dark particles rising from ground (shadow hand effect)
-                        for (int i = 0; i < 60; i++) {
-                            double px = handTarget.x + (level.random.nextDouble() - 0.5) * 3;
-                            double py = handTarget.y + level.random.nextDouble() * 5;
-                            double pz = handTarget.z + (level.random.nextDouble() - 0.5) * 3;
-                            level.sendParticles(net.minecraft.core.particles.ParticleTypes.LARGE_SMOKE,
-                                    px, py, pz, 1, 0, 0.1, 0, 0.02);
-                        }
-                        // Shadow fingers (5 lines of particles going up then slamming down)
-                        for (int finger = 0; finger < 5; finger++) {
-                            double angle = (Math.PI * 2 / 5) * finger;
-                            double fx = handTarget.x + Math.cos(angle) * 2;
-                            double fz = handTarget.z + Math.sin(angle) * 2;
-                            for (int h = 0; h < 8; h++) {
-                                level.sendParticles(net.minecraft.core.particles.ParticleTypes.SOUL_FIRE_FLAME,
-                                        fx, handTarget.y + h * 0.5, fz, 2, 0.1, 0, 0.1, 0.01);
+                        // Hand rises from ground: wrist at bottom, fingers at top
+                        // The hand faces the player, palm open, then closes to crush
+
+                        // === WRIST (base of hand, 2 blocks wide) ===
+                        for (double w = -0.8; w <= 0.8; w += 0.3) {
+                            for (double h = 0; h <= 1.5; h += 0.3) {
+                                double wx = handCenter.x + perpX * w;
+                                double wz = handCenter.z + perpZ * w;
+                                level.sendParticles(net.minecraft.core.particles.ParticleTypes.LARGE_SMOKE,
+                                        wx, baseY + h, wz, 2, 0.05, 0.05, 0.05, 0.005);
+                                level.sendParticles(net.minecraft.core.particles.ParticleTypes.SCULK_SOUL,
+                                        wx, baseY + h, wz, 1, 0.02, 0.02, 0.02, 0.005);
                             }
                         }
-                        // Palm slam particles
-                        for (int i = 0; i < 40; i++) {
-                            double px = handTarget.x + (level.random.nextDouble() - 0.5) * 4;
-                            double pz = handTarget.z + (level.random.nextDouble() - 0.5) * 4;
-                            level.sendParticles(net.minecraft.core.particles.ParticleTypes.SCULK_SOUL,
-                                    px, handTarget.y + 0.5, pz, 1, 0, 0.2, 0, 0.05);
-                        }
 
-                        // Crush: massive damage + effects on all enemies in zone
-                        if (!nearbyEntities.isEmpty()) {
-                            for (var entity : nearbyEntities) {
-                                if (entity instanceof net.minecraft.world.entity.LivingEntity living) {
-                                    // Slam damage (20 = 10 hearts)
-                                    living.hurt(level.damageSources().magic(), 20.0f);
-                                    // Slam the entity into the ground
-                                    living.push(0, -2.0, 0);
-                                    living.hurtMarked = true;
-                                    // Darkness + slowness (crushed)
-                                    living.addEffect(new MobEffectInstance(MobEffects.DARKNESS, 200, 1));
-                                    living.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 200, 4));
-                                    living.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 200, 2));
-                                    // Impact particles on entity
-                                    level.sendParticles(net.minecraft.core.particles.ParticleTypes.EXPLOSION,
-                                            living.getX(), living.getY() + 1, living.getZ(), 3, 0.5, 0.5, 0.5, 0);
+                        // === PALM (wide rectangle, 3 blocks wide, 2.5 blocks tall) ===
+                        for (double w = -1.5; w <= 1.5; w += 0.25) {
+                            for (double h = 1.5; h <= 4.0; h += 0.25) {
+                                double px = handCenter.x + perpX * w;
+                                double pz = handCenter.z + perpZ * w;
+                                level.sendParticles(net.minecraft.core.particles.ParticleTypes.SOUL_FIRE_FLAME,
+                                        px, baseY + h, pz, 1, 0.03, 0.03, 0.03, 0.002);
+                                if (h > 2.0 && h < 3.5 && Math.abs(w) < 1.0) {
+                                    // Denser center of palm
+                                    level.sendParticles(net.minecraft.core.particles.ParticleTypes.LARGE_SMOKE,
+                                            px, baseY + h, pz, 1, 0.02, 0.02, 0.02, 0.001);
                                 }
                             }
                         }
 
-                        // Also give player invisibility + night vision
+                        // === 4 FINGERS (index, middle, ring, pinky) ===
+                        double[] fingerOffsets = {-1.1, -0.37, 0.37, 1.1};
+                        double[] fingerLengths = {2.8, 3.2, 3.0, 2.4};
+
+                        for (int f = 0; f < 4; f++) {
+                            double fOffset = fingerOffsets[f];
+                            double fLen = fingerLengths[f];
+                            double fingerBaseY = baseY + 4.0;
+
+                            // Finger width
+                            for (double seg = 0; seg < fLen; seg += 0.2) {
+                                // Fingers curve inward (closing hand) at the tips
+                                double curl = 0;
+                                if (seg > fLen * 0.6) {
+                                    curl = (seg - fLen * 0.6) * 0.8;
+                                }
+                                double fx = handCenter.x + perpX * fOffset - flatLook.x * curl;
+                                double fz = handCenter.z + perpZ * fOffset - flatLook.z * curl;
+                                double fy = fingerBaseY + seg - curl * 0.3;
+
+                                // Finger thickness
+                                for (double t = -0.15; t <= 0.15; t += 0.15) {
+                                    level.sendParticles(net.minecraft.core.particles.ParticleTypes.SOUL_FIRE_FLAME,
+                                            fx + perpX * t, fy, fz + perpZ * t, 1, 0.02, 0.02, 0.02, 0.001);
+                                    level.sendParticles(net.minecraft.core.particles.ParticleTypes.LARGE_SMOKE,
+                                            fx + perpX * t, fy, fz + perpZ * t, 1, 0.03, 0.03, 0.03, 0.002);
+                                }
+
+                                // Knuckle joints (thicker at segment boundaries)
+                                if (Math.abs(seg - fLen * 0.33) < 0.15 || Math.abs(seg - fLen * 0.66) < 0.15) {
+                                    level.sendParticles(net.minecraft.core.particles.ParticleTypes.SCULK_SOUL,
+                                            fx, fy, fz, 3, 0.1, 0.05, 0.1, 0.005);
+                                }
+                            }
+                        }
+
+                        // === THUMB (shorter, angled outward) ===
+                        double thumbBaseY = baseY + 2.0;
+                        for (double seg = 0; seg < 2.0; seg += 0.2) {
+                            double thumbAngle = -0.6;
+                            double curl = seg > 1.2 ? (seg - 1.2) * 1.0 : 0;
+                            double tx = handCenter.x + perpX * (-1.5 - seg * 0.3) - flatLook.x * curl;
+                            double tz = handCenter.z + perpZ * (-1.5 - seg * 0.3) - flatLook.z * curl;
+                            double ty = thumbBaseY + seg * 0.8;
+
+                            for (double t = -0.12; t <= 0.12; t += 0.12) {
+                                level.sendParticles(net.minecraft.core.particles.ParticleTypes.SOUL_FIRE_FLAME,
+                                        tx, ty, tz + t, 1, 0.02, 0.02, 0.02, 0.001);
+                                level.sendParticles(net.minecraft.core.particles.ParticleTypes.LARGE_SMOKE,
+                                        tx, ty, tz + t, 1, 0.03, 0.03, 0.03, 0.002);
+                            }
+                        }
+
+                        // === SHADOW AURA around the hand ===
+                        for (int i = 0; i < 30; i++) {
+                            double ax = handCenter.x + (level.random.nextDouble() - 0.5) * 5;
+                            double ay = baseY + level.random.nextDouble() * 8;
+                            double az = handCenter.z + (level.random.nextDouble() - 0.5) * 5;
+                            level.sendParticles(net.minecraft.core.particles.ParticleTypes.SMOKE,
+                                    ax, ay, az, 1, 0, -0.05, 0, 0.02);
+                        }
+
+                        // === IMPACT: slam particles on the ground ===
+                        for (int i = 0; i < 50; i++) {
+                            double ix = handCenter.x + (level.random.nextDouble() - 0.5) * 4;
+                            double iz = handCenter.z + (level.random.nextDouble() - 0.5) * 4;
+                            level.sendParticles(net.minecraft.core.particles.ParticleTypes.SCULK_SOUL,
+                                    ix, baseY + 0.2, iz, 1, 0.1, 0.3, 0.1, 0.08);
+                        }
+                        // Ground crack effect
+                        for (double angle = 0; angle < Math.PI * 2; angle += 0.3) {
+                            for (double dist = 0.5; dist < 3.0; dist += 0.4) {
+                                double cx = handCenter.x + Math.cos(angle) * dist;
+                                double cz = handCenter.z + Math.sin(angle) * dist;
+                                level.sendParticles(net.minecraft.core.particles.ParticleTypes.CAMPFIRE_SIGNAL_SMOKE,
+                                        cx, baseY + 0.1, cz, 1, 0, 0.05, 0, 0.001);
+                            }
+                        }
+
+                        // === DAMAGE all enemies under the hand ===
+                        var nearbyEntities = level.getEntities(player,
+                                new AABB(handCenter.x - 4, baseY - 1, handCenter.z - 4,
+                                        handCenter.x + 4, baseY + 8, handCenter.z + 4),
+                                e -> e instanceof net.minecraft.world.entity.LivingEntity && e != player);
+
+                        for (var entity : nearbyEntities) {
+                            if (entity instanceof net.minecraft.world.entity.LivingEntity living) {
+                                living.hurt(level.damageSources().magic(), 22.0f);
+                                living.push(0, -2.5, 0);
+                                living.hurtMarked = true;
+                                living.addEffect(new MobEffectInstance(MobEffects.DARKNESS, 200, 1));
+                                living.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 200, 4));
+                                living.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 200, 2));
+                                level.sendParticles(net.minecraft.core.particles.ParticleTypes.EXPLOSION,
+                                        living.getX(), living.getY() + 1, living.getZ(), 5, 0.5, 0.5, 0.5, 0);
+                                level.sendParticles(net.minecraft.core.particles.ParticleTypes.SOUL,
+                                        living.getX(), living.getY() + 1.5, living.getZ(), 8, 0.3, 0.3, 0.3, 0.05);
+                            }
+                        }
+
+                        // Player buffs
                         player.addEffect(new MobEffectInstance(MobEffects.INVISIBILITY, 200, 0));
                         player.addEffect(new MobEffectInstance(MobEffects.NIGHT_VISION, 400, 0));
 
-                        // Sound: warden roar for the shadow hand
+                        // Sounds
                         level.playSound(null, player.blockPosition(), SoundEvents.WARDEN_ROAR, SoundSource.PLAYERS, 1.0f, 0.6f);
-                        level.playSound(null, BlockPos.containing(handTarget), SoundEvents.WARDEN_SONIC_BOOM, SoundSource.PLAYERS, 0.8f, 0.5f);
+                        level.playSound(null, BlockPos.containing(handCenter), SoundEvents.WARDEN_SONIC_BOOM, SoundSource.PLAYERS, 0.8f, 0.5f);
                     }
                     case LIGHT -> {
                         // Heal self + damage undead nearby
