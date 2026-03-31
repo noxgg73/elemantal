@@ -47,6 +47,12 @@ public class ModMessages {
                 .encoder(UseElementPowerC2SPacket::toBytes)
                 .consumerMainThread(UseElementPowerC2SPacket::handle)
                 .add();
+
+        net.messageBuilder(DarkPrisonC2SPacket.class, id(), NetworkDirection.PLAY_TO_SERVER)
+                .decoder(DarkPrisonC2SPacket::new)
+                .encoder(DarkPrisonC2SPacket::toBytes)
+                .consumerMainThread(DarkPrisonC2SPacket::handle)
+                .add();
     }
 
     public static <MSG> void sendToServer(MSG message) {

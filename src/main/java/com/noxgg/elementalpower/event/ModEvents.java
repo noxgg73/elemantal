@@ -3,6 +3,7 @@ package com.noxgg.elementalpower.event;
 import com.noxgg.elementalpower.ElementalPowerMod;
 import com.noxgg.elementalpower.item.ElementalArmorItem;
 import com.noxgg.elementalpower.item.ElementalWandItem;
+import com.noxgg.elementalpower.world.DarkPrisonManager;
 import com.noxgg.elementalpower.world.TimeDomeManager;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
@@ -29,6 +30,7 @@ public class ModEvents {
     public static void onServerTick(TickEvent.ServerTickEvent event) {
         if (event.phase == TickEvent.Phase.END) {
             TimeDomeManager.tick();
+            DarkPrisonManager.tick();
         }
     }
 
