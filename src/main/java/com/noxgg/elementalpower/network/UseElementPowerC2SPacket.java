@@ -108,17 +108,69 @@ public class UseElementPowerC2SPacket {
                         level.playSound(null, player.blockPosition(), SoundEvents.SPIDER_AMBIENT, SoundSource.PLAYERS, 1.0f, 0.8f);
                     }
                     case DARKNESS -> {
-                        // Go invisible and blind nearby enemies
-                        player.addEffect(new MobEffectInstance(MobEffects.INVISIBILITY, 400, 0));
-                        player.addEffect(new MobEffectInstance(MobEffects.NIGHT_VISION, 600, 0));
-                        level.getEntities(player, player.getBoundingBox().inflate(12), e -> e != player)
-                                .forEach(e -> {
-                                    if (e instanceof net.minecraft.world.entity.LivingEntity living) {
-                                        living.addEffect(new MobEffectInstance(MobEffects.BLINDNESS, 150, 0));
-                                        living.addEffect(new MobEffectInstance(MobEffects.DARKNESS, 150, 0));
-                                    }
-                                });
-                        level.playSound(null, player.blockPosition(), SoundEvents.WARDEN_AMBIENT, SoundSource.PLAYERS, 1.0f, 1.0f);
+                        // Giant Shadow Hand - crushes the nearest enemy
+                        Vec3 lookDir = player.getLookAngle();
+                        Vec3 handTarget = player.position().add(lookDir.scale(8));
+
+                        // Find nearest entity in look direction
+                        var nearbyEntities = level.getEntities(player,
+                                new AABB(handTarget.x - 5, handTarget.y - 5, handTarget.z - 5,
+                                        handTarget.x + 5, handTarget.y + 5, handTarget.z + 5),
+                                e -> e instanceof net.minecraft.world.entity.LivingEntity && e != player);
+
+                        // Dark particles rising from ground (shadow hand effect)
+                        for (int i = 0; i < 60; i++) {
+                            double px = handTarget.x + (level.random.nextDouble() - 0.5) * 3;
+                            double py = handTarget.y + level.random.nextDouble() * 5;
+                            double pz = handTarget.z + (level.random.nextDouble() - 0.5) * 3;
+                            level.sendParticles(net.minecraft.core.particles.ParticleTypes.LARGE_SMOKE,
+                                    px, py, pz, 1, 0, 0.1, 0, 0.02);
+                        }
+                        // Shadow fingers (5 lines of particles going up then slamming down)
+                        for (int finger = 0; finger < 5; finger++) {
+                            double angle = (Math.PI * 2 / 5) * finger;
+                            double fx = handTarget.x + Math.cos(angle) * 2;
+                            double fz = handTarget.z + Math.sin(angle) * 2;
+                            for (int h = 0; h < 8; h++) {
+                                level.sendParticles(net.minecraft.core.particles.ParticleTypes.SOUL_FIRE_FLAME,
+                                        fx, handTarget.y + h * 0.5, fz, 2, 0.1, 0, 0.1, 0.01);
+                            }
+                        }
+                        // Palm slam particles
+                        for (int i = 0; i < 40; i++) {
+                            double px = handTarget.x + (level.random.nextDouble() - 0.5) * 4;
+                            double pz = handTarget.z + (level.random.nextDouble() - 0.5) * 4;
+                            level.sendParticles(net.minecraft.core.particles.ParticleTypes.SCULK_SOUL,
+                                    px, handTarget.y + 0.5, pz, 1, 0, 0.2, 0, 0.05);
+                        }
+
+                        // Crush: massive damage + effects on all enemies in zone
+                        if (!nearbyEntities.isEmpty()) {
+                            for (var entity : nearbyEntities) {
+                                if (entity instanceof net.minecraft.world.entity.LivingEntity living) {
+                                    // Slam damage (20 = 10 hearts)
+                                    living.hurt(level.damageSources().magic(), 20.0f);
+                                    // Slam the entity into the ground
+                                    living.push(0, -2.0, 0);
+                                    living.hurtMarked = true;
+                                    // Darkness + slowness (crushed)
+                                    living.addEffect(new MobEffectInstance(MobEffects.DARKNESS, 200, 1));
+                                    living.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 200, 4));
+                                    living.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 200, 2));
+                                    // Impact particles on entity
+                                    level.sendParticles(net.minecraft.core.particles.ParticleTypes.EXPLOSION,
+                                            living.getX(), living.getY() + 1, living.getZ(), 3, 0.5, 0.5, 0.5, 0);
+                                }
+                            }
+                        }
+
+                        // Also give player invisibility + night vision
+                        player.addEffect(new MobEffectInstance(MobEffects.INVISIBILITY, 200, 0));
+                        player.addEffect(new MobEffectInstance(MobEffects.NIGHT_VISION, 400, 0));
+
+                        // Sound: warden roar for the shadow hand
+                        level.playSound(null, player.blockPosition(), SoundEvents.WARDEN_ROAR, SoundSource.PLAYERS, 1.0f, 0.6f);
+                        level.playSound(null, BlockPos.containing(handTarget), SoundEvents.WARDEN_SONIC_BOOM, SoundSource.PLAYERS, 0.8f, 0.5f);
                     }
                     case LIGHT -> {
                         // Heal self + damage undead nearby
