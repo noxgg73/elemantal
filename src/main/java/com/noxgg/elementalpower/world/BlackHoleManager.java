@@ -139,6 +139,11 @@ public class BlackHoleManager {
                 }
             });
 
+            // === ABSORB BLOCKS (every 4 ticks, expanding radius over time) ===
+            if (hole.ticksRemaining % 4 == 0) {
+                absorbBlocks(hole);
+            }
+
             // === RENDER BLACK HOLE ===
             if (hole.ticksRemaining % 2 == 0) {
                 renderBlackHole(hole);
@@ -153,6 +158,72 @@ public class BlackHoleManager {
                 hole.level.playSound(null, BlockPos.containing(hole.x, hole.y, hole.z),
                         SoundEvents.AMBIENT_CAVE.get(), SoundSource.AMBIENT, 2.0f, 0.3f);
             }
+        }
+    }
+
+    private static void absorbBlocks(BlackHole hole) {
+        int elapsed = 150 - hole.ticksRemaining;
+        // Block absorption radius grows over time: starts at 2, max 10
+        double blockRadius = Math.min(10.0, 2.0 + elapsed * 0.08);
+        int blocksPerTick = 3 + elapsed / 15; // more blocks absorbed as time goes on
+        int destroyed = 0;
+
+        int cx = (int) Math.round(hole.x);
+        int cy = (int) Math.round(hole.y);
+        int cz = (int) Math.round(hole.z);
+
+        // Scan from the outside in (further blocks first)
+        for (double r = blockRadius; r >= 1.5 && destroyed < blocksPerTick; r -= 1.0) {
+            for (int attempt = 0; attempt < 20 && destroyed < blocksPerTick; attempt++) {
+                // Random position on this shell
+                double theta = hole.level.random.nextDouble() * Math.PI * 2;
+                double phi = hole.level.random.nextDouble() * Math.PI;
+                int bx = cx + (int)(Math.cos(theta) * Math.sin(phi) * r);
+                int by = cy + (int)(Math.cos(phi) * r);
+                int bz = cz + (int)(Math.sin(theta) * Math.sin(phi) * r);
+
+                BlockPos pos = new BlockPos(bx, by, bz);
+                net.minecraft.world.level.block.state.BlockState state = hole.level.getBlockState(pos);
+
+                // Don't absorb air, bedrock, or unbreakable blocks
+                if (state.isAir()) continue;
+                if (state.getDestroySpeed(hole.level, pos) < 0) continue; // bedrock etc
+                // Don't absorb liquids to avoid flooding
+                if (state.liquid()) continue;
+
+                // Break the block with particles flying toward center
+                double px = bx + 0.5;
+                double py = by + 0.5;
+                double pz = bz + 0.5;
+
+                // Block break particles heading toward black hole center
+                double dirX = (hole.x - px);
+                double dirY = (hole.y - py);
+                double dirZ = (hole.z - pz);
+                double len = Math.sqrt(dirX * dirX + dirY * dirY + dirZ * dirZ);
+                if (len > 0.1) {
+                    hole.level.sendParticles(ParticleTypes.SMOKE,
+                            px, py, pz, 5, 0.2, 0.2, 0.2, 0.05);
+                    hole.level.sendParticles(ACCRETION_PURPLE,
+                            px, py, pz, 3, 0.1, 0.1, 0.1, 0.08);
+                    // Trail toward center
+                    for (double t = 0; t < 1; t += 0.25) {
+                        hole.level.sendParticles(ParticleTypes.PORTAL,
+                                px + dirX * t, py + dirY * t, pz + dirZ * t,
+                                1, 0.05, 0.05, 0.05, 0.01);
+                    }
+                }
+
+                // Destroy the block
+                hole.level.destroyBlock(pos, false);
+                destroyed++;
+            }
+        }
+
+        // Block absorption crumbling sound
+        if (destroyed > 0 && hole.ticksRemaining % 8 == 0) {
+            hole.level.playSound(null, BlockPos.containing(hole.x, hole.y, hole.z),
+                    SoundEvents.STONE_BREAK, SoundSource.BLOCKS, 1.5f, 0.4f);
         }
     }
 
