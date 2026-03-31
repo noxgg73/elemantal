@@ -73,6 +73,9 @@ public class ModCreativeTabs {
                         output.accept(ModItems.EARTH_LEGGINGS.get());
                         output.accept(ModItems.EARTH_BOOTS.get());
 
+                        // Royal Crown
+                        output.accept(ModItems.ROYAL_CROWN.get());
+
                         // Reset Pearl
                         output.accept(ModItems.ELEMENT_RESET_PEARL.get());
 
