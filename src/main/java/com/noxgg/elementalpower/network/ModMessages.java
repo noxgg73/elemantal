@@ -71,6 +71,18 @@ public class ModMessages {
                 .encoder(VisitPrisonC2SPacket::toBytes)
                 .consumerMainThread(VisitPrisonC2SPacket::handle)
                 .add();
+
+        net.messageBuilder(OpenDemonPortalS2CPacket.class, id(), NetworkDirection.PLAY_TO_CLIENT)
+                .decoder(OpenDemonPortalS2CPacket::new)
+                .encoder(OpenDemonPortalS2CPacket::toBytes)
+                .consumerMainThread(OpenDemonPortalS2CPacket::handle)
+                .add();
+
+        net.messageBuilder(DemonPortalC2SPacket.class, id(), NetworkDirection.PLAY_TO_SERVER)
+                .decoder(DemonPortalC2SPacket::new)
+                .encoder(DemonPortalC2SPacket::toBytes)
+                .consumerMainThread(DemonPortalC2SPacket::handle)
+                .add();
     }
 
     public static <MSG> void sendToServer(MSG message) {

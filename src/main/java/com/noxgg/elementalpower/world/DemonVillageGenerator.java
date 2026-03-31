@@ -157,6 +157,9 @@ public class DemonVillageGenerator {
             }
         }
 
+        // === DEMON PORTAL at village center (offset from altar) ===
+        buildDemonPortal(level, centerX + 8, groundY, centerZ);
+
         // === PORTAL ARRIVAL PARTICLES ===
         level.sendParticles(DEMON_RED, centerX, groundY + 2, centerZ, 60, 3, 2, 3, 0.1);
         level.sendParticles(ParticleTypes.SOUL_FIRE_FLAME, centerX, groundY + 1, centerZ, 40, 5, 1, 5, 0.05);
@@ -255,5 +258,52 @@ public class DemonVillageGenerator {
             level.setBlock(new BlockPos(x + p[0], y + 5, z + p[1]),
                     Blocks.SOUL_FIRE.defaultBlockState(), 3);
         }
+    }
+
+    private static void buildDemonPortal(ServerLevel level, int x, int y, int z) {
+        // Portal frame: obsidian + crying obsidian arch (5 wide, 6 tall)
+        // Base platform
+        for (int dx = -3; dx <= 3; dx++) {
+            for (int dz = -1; dz <= 1; dz++) {
+                level.setBlock(new BlockPos(x + dx, y - 1, z + dz), Blocks.OBSIDIAN.defaultBlockState(), 3);
+            }
+        }
+
+        // Left pillar
+        for (int dy = 0; dy < 6; dy++) {
+            level.setBlock(new BlockPos(x - 2, y + dy, z), Blocks.CRYING_OBSIDIAN.defaultBlockState(), 3);
+            level.setBlock(new BlockPos(x - 3, y + dy, z), Blocks.POLISHED_BLACKSTONE_BRICKS.defaultBlockState(), 3);
+        }
+        // Right pillar
+        for (int dy = 0; dy < 6; dy++) {
+            level.setBlock(new BlockPos(x + 2, y + dy, z), Blocks.CRYING_OBSIDIAN.defaultBlockState(), 3);
+            level.setBlock(new BlockPos(x + 3, y + dy, z), Blocks.POLISHED_BLACKSTONE_BRICKS.defaultBlockState(), 3);
+        }
+        // Top arch
+        for (int dx = -2; dx <= 2; dx++) {
+            level.setBlock(new BlockPos(x + dx, y + 6, z), Blocks.CRYING_OBSIDIAN.defaultBlockState(), 3);
+        }
+        for (int dx = -3; dx <= 3; dx++) {
+            level.setBlock(new BlockPos(x + dx, y + 7, z), Blocks.POLISHED_BLACKSTONE_BRICKS.defaultBlockState(), 3);
+        }
+
+        // Portal interior: nether portal blocks (3 wide, 5 tall)
+        for (int dx = -1; dx <= 1; dx++) {
+            for (int dy = 0; dy < 5; dy++) {
+                level.setBlock(new BlockPos(x + dx, y + dy, z), Blocks.NETHER_PORTAL.defaultBlockState(), 3);
+            }
+        }
+
+        // Decorative soul fire on top
+        level.setBlock(new BlockPos(x - 3, y + 6, z), Blocks.SOUL_FIRE.defaultBlockState(), 3);
+        level.setBlock(new BlockPos(x + 3, y + 6, z), Blocks.SOUL_FIRE.defaultBlockState(), 3);
+        level.setBlock(new BlockPos(x, y + 8, z), Blocks.SOUL_FIRE.defaultBlockState(), 3);
+
+        // Soul lanterns at base
+        level.setBlock(new BlockPos(x - 3, y, z + 1), Blocks.SOUL_LANTERN.defaultBlockState(), 3);
+        level.setBlock(new BlockPos(x + 3, y, z + 1), Blocks.SOUL_LANTERN.defaultBlockState(), 3);
+
+        // Marker block under portal for detection (use a lodestone as marker)
+        level.setBlock(new BlockPos(x, y - 2, z), Blocks.LODESTONE.defaultBlockState(), 3);
     }
 }
