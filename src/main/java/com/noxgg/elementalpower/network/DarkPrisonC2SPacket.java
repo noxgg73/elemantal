@@ -37,7 +37,8 @@ public class DarkPrisonC2SPacket {
             player.getCapability(PlayerElementProvider.PLAYER_ELEMENT).ifPresent(data -> {
                 ElementType element = data.getElement();
                 if (element != ElementType.DARKNESS && element != ElementType.POISON
-                        && element != ElementType.ROYAL && element != ElementType.SPACE) {
+                        && element != ElementType.ROYAL && element != ElementType.SPACE
+                        && element != ElementType.DEMON) {
                     player.sendSystemMessage(Component.literal("Ce sort n'est pas disponible pour ta classe!")
                             .withStyle(ChatFormatting.RED));
                     return;
@@ -69,6 +70,31 @@ public class DarkPrisonC2SPacket {
                             .withStyle(ChatFormatting.DARK_PURPLE, ChatFormatting.BOLD)
                             .append(net.minecraft.network.chat.Component.literal("Il aspire tout pendant 7.5 secondes!")
                                     .withStyle(ChatFormatting.LIGHT_PURPLE)));
+                    return;
+                }
+
+                // DEMON: Soul Tsunami
+                if (element == ElementType.DEMON) {
+                    com.noxgg.elementalpower.world.SoulTsunamiManager.addTsunami(
+                            new com.noxgg.elementalpower.world.SoulTsunamiManager.SoulTsunami(level, player));
+
+                    // Launch burst
+                    var soulRed = new net.minecraft.core.particles.DustParticleOptions(
+                            new org.joml.Vector3f(0.6f, 0.05f, 0.0f), 2.5f);
+                    level.sendParticles(ParticleTypes.SOUL_FIRE_FLAME,
+                            player.getX(), player.getY() + 1, player.getZ(), 40, 1, 1, 1, 0.15);
+                    level.sendParticles(soulRed,
+                            player.getX(), player.getY() + 1, player.getZ(), 30, 1.5, 0.5, 1.5, 0.1);
+                    level.sendParticles(ParticleTypes.SOUL,
+                            player.getX(), player.getY() + 2, player.getZ(), 20, 0.5, 1, 0.5, 0.1);
+
+                    level.playSound(null, player.blockPosition(), SoundEvents.WITHER_SPAWN, SoundSource.PLAYERS, 2.0f, 0.5f);
+                    level.playSound(null, player.blockPosition(), SoundEvents.WARDEN_ROAR, SoundSource.PLAYERS, 1.5f, 0.3f);
+
+                    player.sendSystemMessage(net.minecraft.network.chat.Component.literal(">> Tsunami d'Ames invoque! ")
+                            .withStyle(ChatFormatting.DARK_RED, ChatFormatting.BOLD)
+                            .append(net.minecraft.network.chat.Component.literal("Une vague d'ames deferle devant vous!")
+                                    .withStyle(ChatFormatting.RED)));
                     return;
                 }
 
