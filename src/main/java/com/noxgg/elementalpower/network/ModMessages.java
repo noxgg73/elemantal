@@ -53,18 +53,6 @@ public class ModMessages {
                 .encoder(DarkPrisonC2SPacket::toBytes)
                 .consumerMainThread(DarkPrisonC2SPacket::handle)
                 .add();
-
-        net.messageBuilder(OpenThroneScreenS2CPacket.class, id(), NetworkDirection.PLAY_TO_CLIENT)
-                .decoder(OpenThroneScreenS2CPacket::new)
-                .encoder(OpenThroneScreenS2CPacket::toBytes)
-                .consumerMainThread(OpenThroneScreenS2CPacket::handle)
-                .add();
-
-        net.messageBuilder(ThroneActionC2SPacket.class, id(), NetworkDirection.PLAY_TO_SERVER)
-                .decoder(ThroneActionC2SPacket::new)
-                .encoder(ThroneActionC2SPacket::toBytes)
-                .consumerMainThread(ThroneActionC2SPacket::handle)
-                .add();
     }
 
     public static <MSG> void sendToServer(MSG message) {

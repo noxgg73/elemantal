@@ -50,8 +50,7 @@
   "item.elementalpower.air_leggings": "Jambieres d'Air",
   "item.elementalpower.air_boots": "Bottes d'Air",
 
-  "block.elementalpower.golden_throne": "Trone en Or",
-  "item.elementalpower.royal_crown": "Couronne Royale",
+"item.elementalpower.royal_crown": "Couronne Royale",
   "item.elementalpower.element_reset_pearl": "Perle de Reinitialisation Elementaire",
 
   "key.category.elementalpower": "Elemental Power",
