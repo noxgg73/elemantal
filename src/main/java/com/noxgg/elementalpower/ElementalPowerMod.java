@@ -4,8 +4,7 @@ import com.mojang.logging.LogUtils;
 import com.noxgg.elementalpower.block.ModBlocks;
 import com.noxgg.elementalpower.item.ModItems;
 import com.noxgg.elementalpower.item.ModCreativeTabs;
-import com.noxgg.elementalpower.world.ModOreGeneration;
-import net.minecraft.client.Minecraft;
+import com.noxgg.elementalpower.network.ModMessages;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.server.ServerStartingEvent;
@@ -34,6 +33,7 @@ public class ElementalPowerMod {
     }
 
     private void commonSetup(final FMLCommonSetupEvent event) {
+        event.enqueueWork(ModMessages::register);
         LOGGER.info("Elemental Power Mod initialized!");
     }
 
