@@ -46,8 +46,8 @@ public class DarkPrisonC2SPacket {
                     return;
                 }
 
-                // Check level 10 minimum for G spells
-                if (data.getLevel() < 10) {
+                // Check level 10 minimum for G spells (bypass for creative and server ops)
+                if (data.getLevel() < 10 && !player.isCreative() && !player.hasPermissions(2)) {
                     player.sendSystemMessage(Component.literal(">> Sort G verrouille! Niveau 10 requis (actuel: " + data.getLevel() + ")")
                             .withStyle(ChatFormatting.RED));
                     return;
