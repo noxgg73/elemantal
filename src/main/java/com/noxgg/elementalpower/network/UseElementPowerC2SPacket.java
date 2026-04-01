@@ -393,90 +393,51 @@ public class UseElementPowerC2SPacket {
                         level.playSound(null, player.blockPosition(), SoundEvents.TRIDENT_THUNDER, SoundSource.PLAYERS, 1.0f, 1.0f);
                     }
                     case ROYAL -> {
-                        // ROYAL DECREE: golden crown aura + all mobs kneel + massive buffs
-                        double cx = player.getX();
-                        double cy = player.getY();
-                        double cz = player.getZ();
+                        // ROYAL CASTLE: build a castle 30 blocks in front
+                        Vec3 flatLook = new Vec3(look.x, 0, look.z).normalize();
+                        BlockPos castleCenter = player.blockPosition().offset(
+                                (int)(flatLook.x * 30), 0, (int)(flatLook.z * 30));
 
+                        // Find ground level at castle position
+                        int groundY = castleCenter.getY();
+                        for (int checkY = castleCenter.getY() + 10; checkY > castleCenter.getY() - 10; checkY--) {
+                            if (!level.getBlockState(castleCenter.atY(checkY)).isAir()
+                                    && level.getBlockState(castleCenter.atY(checkY + 1)).isAir()) {
+                                groundY = checkY;
+                                break;
+                            }
+                        }
+
+                        // Generate the castle
+                        com.noxgg.elementalpower.world.CastleGenerator.generate(level, castleCenter, groundY);
+
+                        // Royal particles at player
                         var goldDust = new net.minecraft.core.particles.DustParticleOptions(
-                                new org.joml.Vector3f(1.0f, 0.84f, 0.0f), 2.0f);
-                        var whiteDust = new net.minecraft.core.particles.DustParticleOptions(
-                                new org.joml.Vector3f(1.0f, 1.0f, 0.9f), 1.5f);
+                                new org.joml.Vector3f(1.0f, 0.84f, 0.0f), 2.5f);
+                        level.sendParticles(goldDust,
+                                player.getX(), player.getY() + 2, player.getZ(),
+                                30, 0.5, 0.5, 0.5, 0.05);
+                        level.sendParticles(net.minecraft.core.particles.ParticleTypes.TOTEM_OF_UNDYING,
+                                player.getX(), player.getY() + 1, player.getZ(),
+                                50, 1, 2, 1, 0.3);
 
-                        // Golden crown above player head
-                        for (int i = 0; i < 5; i++) {
-                            double crownAngle = (Math.PI * 2 / 5) * i;
-                            double crR = 0.6;
-                            double crX = cx + Math.cos(crownAngle) * crR;
-                            double crZ = cz + Math.sin(crownAngle) * crR;
-                            // Crown base
-                            level.sendParticles(goldDust, crX, cy + 2.3, crZ, 3, 0.02, 0.02, 0.02, 0.001);
-                            // Crown points (spikes up)
-                            level.sendParticles(goldDust, crX, cy + 2.7, crZ, 3, 0.02, 0.05, 0.02, 0.001);
-                            // Jewels at tips
-                            if (i % 2 == 0) {
-                                level.sendParticles(whiteDust, crX, cy + 2.8, crZ, 2, 0.01, 0.01, 0.01, 0.001);
-                            }
+                        // Golden particle trail to castle
+                        for (int t = 0; t < 30; t++) {
+                            double progress = t / 30.0;
+                            double px = player.getX() + flatLook.x * 30 * progress;
+                            double pz = player.getZ() + flatLook.z * 30 * progress;
+                            level.sendParticles(goldDust, px, groundY + 2, pz, 3, 0.2, 0.5, 0.2, 0.02);
                         }
-                        // Crown ring
-                        for (double a = 0; a < Math.PI * 2; a += 0.15) {
-                            level.sendParticles(goldDust,
-                                    cx + Math.cos(a) * 0.6, cy + 2.3, cz + Math.sin(a) * 0.6,
-                                    1, 0.01, 0.01, 0.01, 0.001);
-                        }
-
-                        // Golden shockwave expanding outward
-                        for (double r = 1; r < 15; r += 1.5) {
-                            int pts = (int)(r * 6);
-                            for (int p = 0; p < pts; p++) {
-                                double angle = (Math.PI * 2.0 / pts) * p;
-                                level.sendParticles(goldDust,
-                                        cx + Math.cos(angle) * r, cy + 0.3, cz + Math.sin(angle) * r,
-                                        1, 0.05, 0.1, 0.05, 0.01);
-                            }
-                        }
-
-                        // Golden pillars of light around the player
-                        for (int pillar = 0; pillar < 4; pillar++) {
-                            double pAngle = (Math.PI * 2 / 4) * pillar;
-                            double pDist = 3;
-                            double px = cx + Math.cos(pAngle) * pDist;
-                            double pz = cz + Math.sin(pAngle) * pDist;
-                            for (double h = 0; h < 8; h += 0.3) {
-                                level.sendParticles(goldDust, px, cy + h, pz, 1, 0.05, 0, 0.05, 0.001);
-                                level.sendParticles(net.minecraft.core.particles.ParticleTypes.END_ROD,
-                                        px, cy + h, pz, 1, 0.02, 0.02, 0.02, 0.005);
-                            }
-                        }
-
-                        // All enemies in 15 blocks: forced to kneel
-                        level.getEntities(player, player.getBoundingBox().inflate(15), e -> e != player)
-                                .forEach(e -> {
-                                    if (e instanceof net.minecraft.world.entity.LivingEntity living) {
-                                        // Kneel (slowness + weakness)
-                                        living.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 300, 127));
-                                        living.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 300, 4));
-                                        living.addEffect(new MobEffectInstance(MobEffects.GLOWING, 300, 0));
-                                        living.setDeltaMovement(0, 0, 0);
-                                        living.hurtMarked = true;
-                                        // Golden chains on each mob
-                                        level.sendParticles(goldDust,
-                                                living.getX(), living.getY() + 1, living.getZ(),
-                                                10, 0.3, 0.5, 0.3, 0.02);
-                                    }
-                                });
-
-                        // Player: royal buffs
-                        player.addEffect(new MobEffectInstance(MobEffects.DAMAGE_BOOST, 600, 2));
-                        player.addEffect(new MobEffectInstance(MobEffects.DAMAGE_RESISTANCE, 600, 2));
-                        player.addEffect(new MobEffectInstance(MobEffects.REGENERATION, 600, 1));
-                        player.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SPEED, 600, 1));
-                        player.addEffect(new MobEffectInstance(MobEffects.HERO_OF_THE_VILLAGE, 600, 0));
-                        player.addEffect(new MobEffectInstance(MobEffects.ABSORPTION, 600, 4));
 
                         // Sounds
                         level.playSound(null, player.blockPosition(), SoundEvents.UI_TOAST_CHALLENGE_COMPLETE, SoundSource.PLAYERS, 2.0f, 1.0f);
                         level.playSound(null, player.blockPosition(), SoundEvents.GOAT_HORN_SOUND_VARIANTS.get(0).get(), SoundSource.PLAYERS, 2.0f, 0.8f);
+                        level.playSound(null, castleCenter, SoundEvents.ANVIL_LAND, SoundSource.BLOCKS, 2.0f, 0.5f);
+
+                        player.sendSystemMessage(net.minecraft.network.chat.Component.literal(">> Chateau Royal erige! ")
+                                .withStyle(net.minecraft.ChatFormatting.GOLD, net.minecraft.ChatFormatting.BOLD)
+                                .append(net.minecraft.network.chat.Component.literal("Votre forteresse vous attend, Majeste!")
+                                        .withStyle(net.minecraft.ChatFormatting.YELLOW)));
                     }
                     default -> {}
                 }
