@@ -59,17 +59,61 @@ public class UseElementPowerC2SPacket {
                         level.playSound(null, player.blockPosition(), SoundEvents.BUCKET_FILL, SoundSource.PLAYERS, 1.0f, 1.0f);
                     }
                     case EARTH -> {
-                        BlockPos base = player.blockPosition().offset(
-                                (int)(look.x * 3), 0, (int)(look.z * 3));
-                        for (int y = 0; y < 4; y++) {
-                            for (int x = -1; x <= 1; x++) {
-                                BlockPos wallPos = base.offset((int)(look.z * x), y, (int)(-look.x * x));
-                                if (level.getBlockState(wallPos).isAir()) {
-                                    level.setBlock(wallPos, Blocks.STONE.defaultBlockState(), 3);
+                        // 50 bones behind the player - if looking at sky: AOE scatter, else: target mob
+                        boolean lookingUp = look.y > 0.7; // looking at sky
+                        net.minecraft.world.entity.LivingEntity boneTarget = null;
+
+                        if (!lookingUp) {
+                            // Find mob being looked at
+                            Vec3 eye = player.getEyePosition();
+                            double closest = 30.0;
+                            for (net.minecraft.world.entity.Entity entity : level.getEntities(player,
+                                    player.getBoundingBox().inflate(30),
+                                    e -> e instanceof net.minecraft.world.entity.LivingEntity && e != player
+                                            && !(e instanceof net.minecraft.world.entity.player.Player))) {
+                                net.minecraft.world.entity.LivingEntity living = (net.minecraft.world.entity.LivingEntity) entity;
+                                Vec3 toEntity = living.position().add(0, living.getBbHeight() / 2, 0).subtract(eye);
+                                double dist = toEntity.length();
+                                if (dist > closest) continue;
+                                if (look.dot(toEntity.normalize()) > 0.9) {
+                                    closest = dist;
+                                    boneTarget = living;
                                 }
                             }
+
+                            if (boneTarget == null) {
+                                // No target found, force AOE mode
+                                lookingUp = true;
+                            }
                         }
-                        level.playSound(null, player.blockPosition(), SoundEvents.STONE_PLACE, SoundSource.PLAYERS, 1.0f, 0.8f);
+
+                        com.noxgg.elementalpower.world.BoneBarrageManager.addBarrage(
+                                new com.noxgg.elementalpower.world.BoneBarrageManager.BoneBarrage(
+                                        level, player, lookingUp, boneTarget));
+
+                        // Summoning particles burst
+                        var summonDust = new net.minecraft.core.particles.DustParticleOptions(
+                                new org.joml.Vector3f(0.9f, 0.9f, 0.85f), 2.5f);
+                        level.sendParticles(summonDust,
+                                player.getX(), player.getY() + 2, player.getZ(),
+                                30, 1, 1, 1, 0.05);
+                        level.sendParticles(net.minecraft.core.particles.ParticleTypes.ELECTRIC_SPARK,
+                                player.getX(), player.getY() + 2, player.getZ(),
+                                15, 0.5, 0.5, 0.5, 0.1);
+
+                        level.playSound(null, player.blockPosition(), SoundEvents.WARDEN_SONIC_CHARGE, SoundSource.PLAYERS, 1.5f, 1.0f);
+
+                        if (lookingUp) {
+                            player.sendSystemMessage(net.minecraft.network.chat.Component.literal(">> 50 Os invoques! ")
+                                    .withStyle(net.minecraft.ChatFormatting.WHITE, net.minecraft.ChatFormatting.BOLD)
+                                    .append(net.minecraft.network.chat.Component.literal("Dispersion totale - tous les mobs de la zone seront elimines!")
+                                            .withStyle(net.minecraft.ChatFormatting.RED)));
+                        } else {
+                            player.sendSystemMessage(net.minecraft.network.chat.Component.literal(">> 50 Os invoques! ")
+                                    .withStyle(net.minecraft.ChatFormatting.WHITE, net.minecraft.ChatFormatting.BOLD)
+                                    .append(net.minecraft.network.chat.Component.literal("Ils foncent sur la cible!")
+                                            .withStyle(net.minecraft.ChatFormatting.GOLD)));
+                        }
                     }
                     case AIR -> {
                         player.push(0, 2.0, 0);

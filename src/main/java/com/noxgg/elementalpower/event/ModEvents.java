@@ -4,6 +4,7 @@ import com.noxgg.elementalpower.ElementalPowerMod;
 import com.noxgg.elementalpower.item.ElementalArmorItem;
 import com.noxgg.elementalpower.item.ElementalWandItem;
 import com.noxgg.elementalpower.world.BlackHoleManager;
+import com.noxgg.elementalpower.world.BoneBarrageManager;
 import com.noxgg.elementalpower.world.EarthBlasterManager;
 import com.noxgg.elementalpower.world.CarnivorousFlowerManager;
 import com.noxgg.elementalpower.world.DreamManager;
@@ -109,6 +110,7 @@ public class ModEvents {
             TimeDomeManager.tick();
             TimeAbyssManager.tick();
             EarthBlasterManager.tick();
+            BoneBarrageManager.tick();
             DarkPrisonManager.tick();
             PoisonDragonManager.tick();
             BlackHoleManager.tick();
