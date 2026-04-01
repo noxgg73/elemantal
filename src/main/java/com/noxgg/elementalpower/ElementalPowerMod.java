@@ -5,6 +5,7 @@ import com.noxgg.elementalpower.block.ModBlocks;
 import com.noxgg.elementalpower.item.ModItems;
 import com.noxgg.elementalpower.item.ModCreativeTabs;
 import com.noxgg.elementalpower.network.ModMessages;
+import com.noxgg.elementalpower.sound.ModSounds;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.server.ServerStartingEvent;
@@ -27,6 +28,7 @@ public class ElementalPowerMod {
         ModBlocks.register(modEventBus);
         ModItems.register(modEventBus);
         ModCreativeTabs.register(modEventBus);
+        ModSounds.register(modEventBus);
 
         modEventBus.addListener(this::commonSetup);
         MinecraftForge.EVENT_BUS.register(this);

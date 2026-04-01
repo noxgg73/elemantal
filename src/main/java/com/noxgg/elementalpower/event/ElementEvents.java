@@ -21,9 +21,11 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.entity.player.Player;
+import com.noxgg.elementalpower.world.CombatMusicManager;
 import net.minecraftforge.event.AttachCapabilitiesEvent;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.entity.living.LivingDeathEvent;
+import net.minecraftforge.event.entity.living.LivingHurtEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
@@ -76,6 +78,23 @@ public class ElementEvents {
         }
     }
 
+    // === COMBAT MUSIC: Megalovania on hit, stop on kill ===
+    @SubscribeEvent
+    public static void onLivingHurt(LivingHurtEvent event) {
+        Entity attacker = event.getSource().getEntity();
+        LivingEntity victim = event.getEntity();
+
+        // Only when a player hits a non-player mob
+        if (attacker instanceof ServerPlayer player && !(victim instanceof Player)) {
+            CombatMusicManager.onPlayerHitMob(player);
+        }
+    }
+
+    @SubscribeEvent
+    public static void onPlayerLogout(PlayerEvent.PlayerLoggedOutEvent event) {
+        CombatMusicManager.onPlayerLogout(event.getEntity().getUUID());
+    }
+
     // === SOUL ABSORPTION ON MOB KILL ===
     @SubscribeEvent
     public static void onLivingDeath(LivingDeathEvent event) {
@@ -84,6 +103,11 @@ public class ElementEvents {
 
         if (!(source instanceof ServerPlayer player)) return;
         if (!(player.level() instanceof ServerLevel serverLevel)) return;
+
+        // Stop Megalovania when a mob (not a player) is killed
+        if (!(killed instanceof Player)) {
+            CombatMusicManager.onMobKilled(player);
+        }
 
         player.getCapability(PlayerElementProvider.PLAYER_ELEMENT).ifPresent(data -> {
             ElementType element = data.getElement();

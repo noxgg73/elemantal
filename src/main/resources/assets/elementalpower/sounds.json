@@ -1,0 +1,11 @@
+{
+  "megalovania": {
+    "category": "music",
+    "sounds": [
+      {
+        "name": "elementalpower:megalovania",
+        "stream": true
+      }
+    ]
+  }
+}
