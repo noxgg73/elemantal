@@ -107,6 +107,18 @@ public class ModMessages {
                 .encoder(UndertaleSubClassC2SPacket::toBytes)
                 .consumerMainThread(UndertaleSubClassC2SPacket::handle)
                 .add();
+
+        net.messageBuilder(OpenUndertaleBattleS2CPacket.class, id(), NetworkDirection.PLAY_TO_CLIENT)
+                .decoder(OpenUndertaleBattleS2CPacket::new)
+                .encoder(OpenUndertaleBattleS2CPacket::toBytes)
+                .consumerMainThread(OpenUndertaleBattleS2CPacket::handle)
+                .add();
+
+        net.messageBuilder(UndertaleBattleActionC2SPacket.class, id(), NetworkDirection.PLAY_TO_SERVER)
+                .decoder(UndertaleBattleActionC2SPacket::new)
+                .encoder(UndertaleBattleActionC2SPacket::toBytes)
+                .consumerMainThread(UndertaleBattleActionC2SPacket::handle)
+                .add();
     }
 
     public static <MSG> void sendToServer(MSG message) {

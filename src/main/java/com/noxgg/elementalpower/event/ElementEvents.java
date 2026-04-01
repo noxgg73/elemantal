@@ -22,6 +22,7 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.entity.player.Player;
 import com.noxgg.elementalpower.world.CombatMusicManager;
+import com.noxgg.elementalpower.world.UndertaleBattleManager;
 import net.minecraftforge.event.AttachCapabilitiesEvent;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.entity.living.LivingDeathEvent;
@@ -78,16 +79,21 @@ public class ElementEvents {
         }
     }
 
-    // === FRISK: Block all attacks from Frisk players ===
+    // === UNDERTALE: Intercept attacks to open battle screen ===
     @SubscribeEvent
-    public static void onFriskAttack(net.minecraftforge.event.entity.player.AttackEntityEvent event) {
+    public static void onUndertaleAttack(net.minecraftforge.event.entity.player.AttackEntityEvent event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        if (!(event.getTarget() instanceof LivingEntity target)) return;
+        if (target instanceof Player) return; // Don't battle players
+
         player.getCapability(PlayerElementProvider.PLAYER_ELEMENT).ifPresent(data -> {
-            if (data.getElement() == ElementType.UNDERTALE && data.isFrisk()) {
-                event.setCanceled(true);
-                player.sendSystemMessage(Component.literal("")
-                        .append(Component.literal("* ").withStyle(ChatFormatting.YELLOW))
-                        .append(Component.literal("Tu ne peux pas attaquer. Utilise G pour SPARE.").withStyle(ChatFormatting.GOLD)));
+            if (data.getElement() == ElementType.UNDERTALE) {
+                event.setCanceled(true); // Cancel normal attack
+
+                if (UndertaleBattleManager.isInBattle(player.getUUID())) return;
+
+                // Start Undertale battle
+                UndertaleBattleManager.startBattle(player, target, data.isFrisk());
             }
         });
     }
@@ -98,15 +104,8 @@ public class ElementEvents {
         Entity attacker = event.getSource().getEntity();
         LivingEntity victim = event.getEntity();
 
-        // Block damage from Frisk players entirely
+        // Only when a player hits a non-player mob
         if (attacker instanceof ServerPlayer player && !(victim instanceof Player)) {
-            player.getCapability(PlayerElementProvider.PLAYER_ELEMENT).ifPresent(data -> {
-                if (data.getElement() == ElementType.UNDERTALE && data.isFrisk()) {
-                    event.setCanceled(true);
-                    return;
-                }
-            });
-            if (event.isCanceled()) return;
             CombatMusicManager.onPlayerHitMob(player);
         }
     }
@@ -114,6 +113,7 @@ public class ElementEvents {
     @SubscribeEvent
     public static void onPlayerLogout(PlayerEvent.PlayerLoggedOutEvent event) {
         CombatMusicManager.onPlayerLogout(event.getEntity().getUUID());
+        UndertaleBattleManager.onPlayerLogout(event.getEntity().getUUID());
     }
 
     // === SOUL ABSORPTION ON MOB KILL ===
