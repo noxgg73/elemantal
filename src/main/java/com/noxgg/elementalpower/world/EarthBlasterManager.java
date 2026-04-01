@@ -17,12 +17,6 @@ import java.util.List;
 public class EarthBlasterManager {
     private static final List<EarthBlast> activeBlasts = new ArrayList<>();
 
-    // Phases:
-    // 0 = SUMMON (0-40 ticks): two giant skulls materialize on each side of player
-    // 1 = AIM (40-70 ticks): skulls rotate to face the target, warning beams
-    // 2 = FIRE (70-120 ticks): two massive beams converge on target
-    // 3 = DONE
-
     public static class EarthBlast {
         public final ServerLevel level;
         public final ServerPlayer owner;
@@ -30,9 +24,13 @@ public class EarthBlasterManager {
         public int ticksElapsed;
         public int phase;
 
-        // Blaster positions (left and right of player)
+        // Blaster positions
         public double leftX, leftY, leftZ;
         public double rightX, rightY, rightZ;
+        // Direction each blaster faces (toward target)
+        public Vec3 leftDir, rightDir;
+        // Perpendicular vectors for skull width
+        public Vec3 leftPerp, rightPerp;
 
         public EarthBlast(ServerLevel level, ServerPlayer owner, LivingEntity target) {
             this.level = level;
@@ -41,17 +39,25 @@ public class EarthBlasterManager {
             this.ticksElapsed = 0;
             this.phase = 0;
 
-            // Position blasters 6 blocks to the left and right of player, 3 blocks up
             Vec3 look = owner.getLookAngle();
             Vec3 side = new Vec3(-look.z, 0, look.x).normalize();
 
-            this.leftX = owner.getX() + side.x * 6;
-            this.leftY = owner.getY() + 3;
-            this.leftZ = owner.getZ() + side.z * 6;
+            this.leftX = owner.getX() + side.x * 7;
+            this.leftY = owner.getY() + 3.5;
+            this.leftZ = owner.getZ() + side.z * 7;
 
-            this.rightX = owner.getX() - side.x * 6;
-            this.rightY = owner.getY() + 3;
-            this.rightZ = owner.getZ() - side.z * 6;
+            this.rightX = owner.getX() - side.x * 7;
+            this.rightY = owner.getY() + 3.5;
+            this.rightZ = owner.getZ() - side.z * 7;
+
+            // Direction from each blaster to target
+            Vec3 tPos = target.position().add(0, target.getBbHeight() / 2, 0);
+            this.leftDir = tPos.subtract(leftX, leftY, leftZ).normalize();
+            this.rightDir = tPos.subtract(rightX, rightY, rightZ).normalize();
+
+            // Perpendicular (horizontal) for skull width
+            this.leftPerp = new Vec3(-leftDir.z, 0, leftDir.x).normalize();
+            this.rightPerp = new Vec3(-rightDir.z, 0, rightDir.x).normalize();
         }
     }
 
@@ -86,130 +92,254 @@ public class EarthBlasterManager {
         }
     }
 
-    private static void tickSummon(EarthBlast blast) {
-        // Giant skulls materializing with earth/stone particles
-        var stoneDust = new DustParticleOptions(new Vector3f(0.5f, 0.4f, 0.3f), 3.0f);
-        var darkDust = new DustParticleOptions(new Vector3f(0.3f, 0.25f, 0.15f), 4.0f);
+    // ==========================================
+    // GASTER BLASTER SKULL RENDERING
+    // Reproduces the iconic skull shape:
+    // - Elongated dragon/beast cranium
+    // - Two large eye sockets (glowing cyan/orange)
+    // - Nasal cavity
+    // - Snout/muzzle pointing toward target
+    // - Lower jaw that opens before firing
+    // ==========================================
 
-        double progress = blast.ticksElapsed / 40.0;
+    /**
+     * Render a full Gaster Blaster skull facing a direction.
+     * @param jawOpen 0.0 = closed, 1.0 = fully open
+     * @param firing whether the blaster is currently firing
+     */
+    private static void renderGasterBlaster(ServerLevel level, double cx, double cy, double cz,
+                                             Vec3 forward, Vec3 perp, double scale,
+                                             double jawOpen, boolean firing, int tick) {
+        Vec3 up = new Vec3(0, 1, 0);
+        var bone = new DustParticleOptions(new Vector3f(0.9f, 0.9f, 0.85f), 2.5f * (float)scale);
+        var boneEdge = new DustParticleOptions(new Vector3f(0.7f, 0.7f, 0.65f), 2.0f * (float)scale);
+        var eyeColor = firing
+                ? new DustParticleOptions(new Vector3f(0.0f, 1.0f, 1.0f), 3.0f * (float)scale)  // cyan when firing
+                : new DustParticleOptions(new Vector3f(1.0f, 0.5f, 0.0f), 2.5f * (float)scale); // orange when aiming
 
-        // Left blaster forming
-        renderSkullFormation(blast.level, blast.leftX, blast.leftY, blast.leftZ,
-                stoneDust, darkDust, progress, blast.ticksElapsed);
+        double s = scale;
 
-        // Right blaster forming
-        renderSkullFormation(blast.level, blast.rightX, blast.rightY, blast.rightZ,
-                stoneDust, darkDust, progress, blast.ticksElapsed);
+        // === CRANIUM (back of skull - rounded dome) ===
+        // Top dome
+        for (double a = 0; a < Math.PI * 2; a += 0.4) {
+            for (double h = 0; h < 1.2; h += 0.4) {
+                double r = (1.3 - h * 0.4) * s;
+                double px = cx - forward.x * 0.5 * s + perp.x * Math.cos(a) * r;
+                double py = cy + (0.5 + h) * s;
+                double pz = cz - forward.z * 0.5 * s + perp.z * Math.cos(a) * r;
+                level.sendParticles(bone, px, py, pz, 1, 0, 0, 0, 0);
+            }
+        }
 
-        // Rumbling ground sounds
-        if (blast.ticksElapsed % 10 == 0) {
-            blast.level.playSound(null, blast.owner.blockPosition(),
-                    SoundEvents.STONE_BREAK, SoundSource.PLAYERS, 2.0f, 0.3f);
-            blast.level.playSound(null, blast.owner.blockPosition(),
-                    SoundEvents.ANVIL_LAND, SoundSource.PLAYERS, 0.5f, 0.3f + (float)progress * 0.5f);
+        // === BROW RIDGE (above eyes - thick ridge) ===
+        for (double t = -1.2; t <= 1.2; t += 0.3) {
+            double px = cx + perp.x * t * s + forward.x * 0.3 * s;
+            double py = cy + 1.0 * s;
+            double pz = cz + perp.z * t * s + forward.z * 0.3 * s;
+            level.sendParticles(bone, px, py, pz, 1, 0, 0, 0, 0);
+            level.sendParticles(boneEdge, px, py + 0.15 * s, pz, 1, 0, 0, 0, 0);
+        }
+
+        // === EYE SOCKETS (two large hollow eyes) ===
+        // Left eye
+        double leX = cx + perp.x * 0.6 * s + forward.x * 0.5 * s;
+        double leY = cy + 0.65 * s;
+        double leZ = cz + perp.z * 0.6 * s + forward.z * 0.5 * s;
+        // Eye socket border (bone ring)
+        for (double a = 0; a < Math.PI * 2; a += 0.5) {
+            double r = 0.4 * s;
+            level.sendParticles(boneEdge,
+                    leX + perp.x * Math.cos(a) * r, leY + Math.sin(a) * r,
+                    leZ + perp.z * Math.cos(a) * r, 1, 0, 0, 0, 0);
+        }
+        // Eye glow (fills socket)
+        level.sendParticles(eyeColor, leX, leY, leZ, 3, 0.1 * s, 0.1 * s, 0.1 * s, 0.01);
+        if (firing) {
+            level.sendParticles(eyeColor, leX, leY + 0.3 * s, leZ, 2, 0.05, 0.2 * s, 0.05, 0.02);
+        }
+
+        // Right eye
+        double reX = cx - perp.x * 0.6 * s + forward.x * 0.5 * s;
+        double reY = cy + 0.65 * s;
+        double reZ = cz - perp.z * 0.6 * s + forward.z * 0.5 * s;
+        for (double a = 0; a < Math.PI * 2; a += 0.5) {
+            double r = 0.4 * s;
+            level.sendParticles(boneEdge,
+                    reX + perp.x * Math.cos(a) * r, reY + Math.sin(a) * r,
+                    reZ + perp.z * Math.cos(a) * r, 1, 0, 0, 0, 0);
+        }
+        level.sendParticles(eyeColor, reX, reY, reZ, 3, 0.1 * s, 0.1 * s, 0.1 * s, 0.01);
+        if (firing) {
+            level.sendParticles(eyeColor, reX, reY + 0.3 * s, reZ, 2, 0.05, 0.2 * s, 0.05, 0.02);
+        }
+
+        // === NASAL CAVITY (small dark triangle between eyes and snout) ===
+        double noseX = cx + forward.x * 0.8 * s;
+        double noseY = cy + 0.4 * s;
+        double noseZ = cz + forward.z * 0.8 * s;
+        var noseDark = new DustParticleOptions(new Vector3f(0.3f, 0.3f, 0.3f), 1.5f * (float)s);
+        level.sendParticles(noseDark, noseX, noseY, noseZ, 2, 0.08 * s, 0.05 * s, 0.08 * s, 0);
+
+        // === SNOUT / MUZZLE (upper jaw - extends forward) ===
+        for (double d = 0.6; d <= 2.0; d += 0.3) {
+            double width = (1.0 - (d - 0.6) * 0.25) * s; // narrows toward tip
+            double height = 0.3 * s;
+            double mx = cx + forward.x * d * s;
+            double my = cy + 0.15 * s;
+            double mz = cz + forward.z * d * s;
+
+            // Top of snout
+            level.sendParticles(bone, mx, my + height, mz, 1, 0, 0, 0, 0);
+            // Sides
+            level.sendParticles(bone, mx + perp.x * width * 0.5, my, mz + perp.z * width * 0.5, 1, 0, 0, 0, 0);
+            level.sendParticles(bone, mx - perp.x * width * 0.5, my, mz - perp.z * width * 0.5, 1, 0, 0, 0, 0);
+            // Bottom of upper jaw
+            level.sendParticles(boneEdge, mx, my - 0.1 * s, mz, 1, 0, 0, 0, 0);
+        }
+
+        // === UPPER TEETH (hanging from upper jaw) ===
+        var toothColor = new DustParticleOptions(new Vector3f(1.0f, 1.0f, 0.95f), 1.5f * (float)s);
+        for (int t = 0; t < 5; t++) {
+            double d = 0.8 + t * 0.3;
+            double tx = cx + forward.x * d * s;
+            double tz = cz + forward.z * d * s;
+            double tWidth = (0.8 - t * 0.1) * s;
+            // Left tooth
+            level.sendParticles(toothColor,
+                    tx + perp.x * tWidth * 0.3, cy - 0.1 * s, tz + perp.z * tWidth * 0.3,
+                    1, 0, 0, 0, 0);
+            // Right tooth
+            level.sendParticles(toothColor,
+                    tx - perp.x * tWidth * 0.3, cy - 0.1 * s, tz - perp.z * tWidth * 0.3,
+                    1, 0, 0, 0, 0);
+        }
+
+        // === LOWER JAW (opens downward based on jawOpen) ===
+        double jawAngle = jawOpen * 0.8; // radians of jaw opening
+        double jawDropY = Math.sin(jawAngle) * 1.5 * s;
+        double jawForwardShift = (1.0 - Math.cos(jawAngle)) * 0.5 * s;
+
+        for (double d = 0.4; d <= 1.8; d += 0.3) {
+            double width = (0.9 - (d - 0.4) * 0.2) * s;
+            double jx = cx + forward.x * (d * s - jawForwardShift);
+            double jy = cy - 0.3 * s - jawDropY * (d / 1.8);
+            double jz = cz + forward.z * (d * s - jawForwardShift);
+
+            // Bottom of jaw
+            level.sendParticles(bone, jx, jy, jz, 1, 0, 0, 0, 0);
+            // Sides
+            level.sendParticles(boneEdge, jx + perp.x * width * 0.4, jy + 0.1 * s, jz + perp.z * width * 0.4, 1, 0, 0, 0, 0);
+            level.sendParticles(boneEdge, jx - perp.x * width * 0.4, jy + 0.1 * s, jz - perp.z * width * 0.4, 1, 0, 0, 0, 0);
+        }
+
+        // === LOWER TEETH (pointing up from lower jaw) ===
+        for (int t = 0; t < 4; t++) {
+            double d = 0.7 + t * 0.3;
+            double tx = cx + forward.x * (d * s - jawForwardShift);
+            double ty = cy - 0.2 * s - jawDropY * (d / 1.8);
+            double tz = cz + forward.z * (d * s - jawForwardShift);
+            double tWidth = (0.7 - t * 0.1) * s;
+            level.sendParticles(toothColor,
+                    tx + perp.x * tWidth * 0.25, ty + 0.15 * s, tz + perp.z * tWidth * 0.25,
+                    1, 0, 0, 0, 0);
+            level.sendParticles(toothColor,
+                    tx - perp.x * tWidth * 0.25, ty + 0.15 * s, tz - perp.z * tWidth * 0.25,
+                    1, 0, 0, 0, 0);
+        }
+
+        // === ENERGY CHARGING IN MOUTH (when jaw is open) ===
+        if (jawOpen > 0.3) {
+            double mouthX = cx + forward.x * 1.2 * s;
+            double mouthY = cy - 0.1 * s - jawDropY * 0.5;
+            double mouthZ = cz + forward.z * 1.2 * s;
+
+            var chargeDust = firing
+                    ? new DustParticleOptions(new Vector3f(1.0f, 1.0f, 1.0f), 3.0f * (float)s)
+                    : new DustParticleOptions(new Vector3f(0.5f, 0.8f, 1.0f), 2.0f * (float)s);
+            level.sendParticles(chargeDust, mouthX, mouthY, mouthZ,
+                    firing ? 5 : 2, 0.15 * s, 0.15 * s, 0.15 * s, 0.02);
+
+            if (firing) {
+                level.sendParticles(ParticleTypes.ELECTRIC_SPARK,
+                        mouthX, mouthY, mouthZ, 3, 0.2, 0.2, 0.2, 0.05);
+            }
+        }
+
+        // === DECORATIVE SIDE HORNS/RIDGES ===
+        for (int horn = 0; horn < 2; horn++) {
+            double sign = horn == 0 ? 1 : -1;
+            double hx = cx + perp.x * sign * 1.3 * s - forward.x * 0.2 * s;
+            double hy = cy + 1.2 * s;
+            double hz = cz + perp.z * sign * 1.3 * s - forward.z * 0.2 * s;
+            level.sendParticles(boneEdge, hx, hy, hz, 1, 0, 0, 0, 0);
+            level.sendParticles(boneEdge, hx + perp.x * sign * 0.3 * s, hy + 0.3 * s,
+                    hz + perp.z * sign * 0.3 * s, 1, 0, 0, 0, 0);
         }
     }
 
-    private static void renderSkullFormation(ServerLevel level, double x, double y, double z,
-                                              DustParticleOptions stone, DustParticleOptions dark,
-                                              double progress, int tick) {
-        // Skull grows in size as it forms
-        double size = 2.0 * progress;
+    // ==========================================
+    // PHASE TICKS
+    // ==========================================
 
-        // Main skull body (rectangular)
-        for (int i = 0; i < (int)(15 * progress); i++) {
-            double ox = (level.random.nextDouble() - 0.5) * size * 1.5;
-            double oy = (level.random.nextDouble() - 0.5) * size;
-            double oz = (level.random.nextDouble() - 0.5) * size * 1.5;
-            level.sendParticles(stone, x + ox, y + oy, z + oz, 1, 0, 0, 0, 0);
+    private static void tickSummon(EarthBlast blast) {
+        double progress = blast.ticksElapsed / 40.0;
+
+        // Render skulls forming (scale grows, jaw closed)
+        renderGasterBlaster(blast.level, blast.leftX, blast.leftY, blast.leftZ,
+                blast.leftDir, blast.leftPerp, progress * 1.5, 0, false, blast.ticksElapsed);
+        renderGasterBlaster(blast.level, blast.rightX, blast.rightY, blast.rightZ,
+                blast.rightDir, blast.rightPerp, progress * 1.5, 0, false, blast.ticksElapsed);
+
+        // Formation particles swirling around each blaster
+        var formDust = new DustParticleOptions(new Vector3f(0.8f, 0.8f, 0.75f), 1.5f);
+        for (int i = 0; i < 6; i++) {
+            double angle = (blast.ticksElapsed * 0.3) + (Math.PI * 2.0 / 6) * i;
+            double r = 2.5 * (1.0 - progress);
+            // Left
+            blast.level.sendParticles(formDust,
+                    blast.leftX + Math.cos(angle) * r, blast.leftY + Math.sin(angle * 0.5) * 0.5,
+                    blast.leftZ + Math.sin(angle) * r, 1, 0, 0, 0, 0);
+            // Right
+            blast.level.sendParticles(formDust,
+                    blast.rightX + Math.cos(angle) * r, blast.rightY + Math.sin(angle * 0.5) * 0.5,
+                    blast.rightZ + Math.sin(angle) * r, 1, 0, 0, 0, 0);
         }
 
-        // Eyes (glowing orange/brown)
-        if (progress > 0.5) {
-            var eyeDust = new DustParticleOptions(new Vector3f(1.0f, 0.6f, 0.0f), 2.0f);
-            level.sendParticles(eyeDust, x - 0.5, y + 0.3, z, 2, 0.1, 0.1, 0.1, 0.01);
-            level.sendParticles(eyeDust, x + 0.5, y + 0.3, z, 2, 0.1, 0.1, 0.1, 0.01);
-        }
-
-        // Stone debris falling
-        level.sendParticles(ParticleTypes.ASH,
-                x, y - 1, z, 3, 0.5, 0.2, 0.5, 0.01);
-
-        // Electric sparks building up
-        if (progress > 0.7 && tick % 3 == 0) {
-            level.sendParticles(ParticleTypes.ELECTRIC_SPARK,
-                    x, y, z, 5, 0.8, 0.5, 0.8, 0.05);
+        if (blast.ticksElapsed % 8 == 0) {
+            blast.level.playSound(null, blast.owner.blockPosition(),
+                    SoundEvents.BONE_BLOCK_PLACE, SoundSource.PLAYERS, 2.0f, 0.3f + (float)progress * 0.5f);
         }
     }
 
     private static void tickAim(EarthBlast blast) {
+        int localTick = blast.ticksElapsed - 40;
+        double jawProgress = localTick / 30.0; // jaw opens over aim phase
+
         Vec3 targetPos = blast.target.position().add(0, blast.target.getBbHeight() / 2, 0);
 
-        var stoneDust = new DustParticleOptions(new Vector3f(0.5f, 0.4f, 0.3f), 3.0f);
-        var eyeDust = new DustParticleOptions(new Vector3f(1.0f, 0.5f, 0.0f), 2.5f);
-        var warningDust = new DustParticleOptions(new Vector3f(1.0f, 0.2f, 0.0f), 1.0f);
+        // Render blasters with jaw opening
+        renderGasterBlaster(blast.level, blast.leftX, blast.leftY, blast.leftZ,
+                blast.leftDir, blast.leftPerp, 1.5, jawProgress, false, blast.ticksElapsed);
+        renderGasterBlaster(blast.level, blast.rightX, blast.rightY, blast.rightZ,
+                blast.rightDir, blast.rightPerp, 1.5, jawProgress, false, blast.ticksElapsed);
 
-        // Render both skulls fully formed
-        renderFullSkull(blast.level, blast.leftX, blast.leftY, blast.leftZ, stoneDust, eyeDust);
-        renderFullSkull(blast.level, blast.rightX, blast.rightY, blast.rightZ, stoneDust, eyeDust);
-
-        // Warning laser lines from each skull to target
-        int localTick = blast.ticksElapsed - 40;
+        // Warning lines
         if (localTick % 2 == 0) {
-            // Left beam warning
-            renderWarningLine(blast.level, blast.leftX, blast.leftY, blast.leftZ,
+            var warningDust = new DustParticleOptions(new Vector3f(1.0f, 0.2f, 0.0f), 1.0f);
+            renderWarningLine(blast.level, blast.leftX + blast.leftDir.x * 2.5,
+                    blast.leftY, blast.leftZ + blast.leftDir.z * 2.5,
                     targetPos.x, targetPos.y, targetPos.z, warningDust);
-            // Right beam warning
-            renderWarningLine(blast.level, blast.rightX, blast.rightY, blast.rightZ,
+            renderWarningLine(blast.level, blast.rightX + blast.rightDir.x * 2.5,
+                    blast.rightY, blast.rightZ + blast.rightDir.z * 2.5,
                     targetPos.x, targetPos.y, targetPos.z, warningDust);
         }
 
-        // Charging sound
-        if (localTick % 10 == 0) {
-            blast.level.playSound(null, blast.owner.blockPosition(),
-                    SoundEvents.BEACON_ACTIVATE, SoundSource.PLAYERS, 1.5f, 0.5f + localTick * 0.02f);
-        }
-
-        // Freeze the target
         blast.target.setDeltaMovement(0, 0, 0);
         blast.target.hurtMarked = true;
 
-        // Jaw opening animation - more electric sparks
-        level_sparks(blast.level, blast.leftX, blast.leftY - 0.5, blast.leftZ, blast.ticksElapsed);
-        level_sparks(blast.level, blast.rightX, blast.rightY - 0.5, blast.rightZ, blast.ticksElapsed);
-    }
-
-    private static void level_sparks(ServerLevel level, double x, double y, double z, int tick) {
-        if (tick % 2 == 0) {
-            var chargeDust = new DustParticleOptions(new Vector3f(1.0f, 0.8f, 0.0f), 1.5f);
-            level.sendParticles(chargeDust, x, y, z, 3, 0.3, 0.3, 0.3, 0.02);
-            level.sendParticles(ParticleTypes.ELECTRIC_SPARK, x, y, z, 4, 0.4, 0.3, 0.4, 0.08);
-        }
-    }
-
-    private static void renderFullSkull(ServerLevel level, double x, double y, double z,
-                                         DustParticleOptions body, DustParticleOptions eyes) {
-        // Skull body
-        for (int i = 0; i < 20; i++) {
-            double ox = (level.random.nextDouble() - 0.5) * 3.0;
-            double oy = (level.random.nextDouble() - 0.5) * 2.0;
-            double oz = (level.random.nextDouble() - 0.5) * 3.0;
-            level.sendParticles(body, x + ox, y + oy, z + oz, 1, 0, 0, 0, 0);
-        }
-        // Eyes
-        level.sendParticles(eyes, x - 0.6, y + 0.4, z, 3, 0.1, 0.1, 0.1, 0.01);
-        level.sendParticles(eyes, x + 0.6, y + 0.4, z, 3, 0.1, 0.1, 0.1, 0.01);
-    }
-
-    private static void renderWarningLine(ServerLevel level, double x1, double y1, double z1,
-                                           double x2, double y2, double z2, DustParticleOptions dust) {
-        int steps = 20;
-        for (int i = 0; i < steps; i++) {
-            double t = i / (double)steps;
-            double px = x1 + (x2 - x1) * t;
-            double py = y1 + (y2 - y1) * t;
-            double pz = z1 + (z2 - z1) * t;
-            level.sendParticles(dust, px, py, pz, 1, 0.02, 0.02, 0.02, 0);
+        if (localTick % 10 == 0) {
+            blast.level.playSound(null, blast.owner.blockPosition(),
+                    SoundEvents.BEACON_ACTIVATE, SoundSource.PLAYERS, 1.5f, 0.5f + localTick * 0.02f);
         }
     }
 
@@ -217,55 +347,52 @@ public class EarthBlasterManager {
         int localTick = blast.ticksElapsed - 70;
         Vec3 targetPos = blast.target.position().add(0, blast.target.getBbHeight() / 2, 0);
 
-        var beamCore = new DustParticleOptions(new Vector3f(1.0f, 0.9f, 0.5f), 3.5f);
-        var beamOuter = new DustParticleOptions(new Vector3f(0.8f, 0.5f, 0.1f), 2.5f);
-        var beamGlow = new DustParticleOptions(new Vector3f(1.0f, 0.7f, 0.2f), 2.0f);
+        // Render blasters with fully open jaw, firing
+        renderGasterBlaster(blast.level, blast.leftX, blast.leftY, blast.leftZ,
+                blast.leftDir, blast.leftPerp, 1.5, 1.0, true, blast.ticksElapsed);
+        renderGasterBlaster(blast.level, blast.rightX, blast.rightY, blast.rightZ,
+                blast.rightDir, blast.rightPerp, 1.5, 1.0, true, blast.ticksElapsed);
 
-        // === LEFT BEAM ===
-        renderBeam(blast.level, blast.leftX, blast.leftY, blast.leftZ,
+        // === BEAMS from mouth to target ===
+        var beamCore = new DustParticleOptions(new Vector3f(1.0f, 1.0f, 1.0f), 3.5f);
+        var beamOuter = new DustParticleOptions(new Vector3f(0.6f, 0.9f, 1.0f), 2.5f);
+        var beamGlow = new DustParticleOptions(new Vector3f(0.3f, 0.7f, 1.0f), 2.0f);
+
+        // Beam starts from mouth position (in front of skull)
+        double lmX = blast.leftX + blast.leftDir.x * 3;
+        double lmY = blast.leftY - 0.2;
+        double lmZ = blast.leftZ + blast.leftDir.z * 3;
+
+        double rmX = blast.rightX + blast.rightDir.x * 3;
+        double rmY = blast.rightY - 0.2;
+        double rmZ = blast.rightZ + blast.rightDir.z * 3;
+
+        renderBeam(blast.level, lmX, lmY, lmZ,
+                targetPos.x, targetPos.y, targetPos.z, beamCore, beamOuter, beamGlow, localTick);
+        renderBeam(blast.level, rmX, rmY, rmZ,
                 targetPos.x, targetPos.y, targetPos.z, beamCore, beamOuter, beamGlow, localTick);
 
-        // === RIGHT BEAM ===
-        renderBeam(blast.level, blast.rightX, blast.rightY, blast.rightZ,
-                targetPos.x, targetPos.y, targetPos.z, beamCore, beamOuter, beamGlow, localTick);
-
-        // Keep rendering skulls
-        var stoneDust = new DustParticleOptions(new Vector3f(0.5f, 0.4f, 0.3f), 3.0f);
-        var eyeFire = new DustParticleOptions(new Vector3f(1.0f, 1.0f, 0.5f), 3.0f);
-        renderFullSkull(blast.level, blast.leftX, blast.leftY, blast.leftZ, stoneDust, eyeFire);
-        renderFullSkull(blast.level, blast.rightX, blast.rightY, blast.rightZ, stoneDust, eyeFire);
-
-        // === DAMAGE TARGET ===
+        // Damage
         if (localTick % 5 == 0) {
-            float damage = 6.0f;
-            blast.target.hurt(blast.level.damageSources().magic(), damage);
+            blast.target.hurt(blast.level.damageSources().magic(), 6.0f);
             blast.target.setDeltaMovement(0, 0, 0);
             blast.target.hurtMarked = true;
         }
 
-        // === IMPACT EXPLOSION at target ===
-        blast.level.sendParticles(ParticleTypes.EXPLOSION,
-                targetPos.x, targetPos.y, targetPos.z, 1, 0.3, 0.3, 0.3, 0);
-        blast.level.sendParticles(ParticleTypes.FLASH,
-                targetPos.x, targetPos.y, targetPos.z, 1, 0, 0, 0, 0);
-        blast.level.sendParticles(ParticleTypes.LAVA,
-                targetPos.x, targetPos.y, targetPos.z, 3, 0.5, 0.5, 0.5, 0.1);
-
-        // Impact particles ring at convergence point
-        for (int i = 0; i < 8; i++) {
-            double angle = (Math.PI * 2.0 / 8) * i + localTick * 0.3;
-            double r = 1.5;
-            double px = targetPos.x + Math.cos(angle) * r;
-            double pz = targetPos.z + Math.sin(angle) * r;
-            blast.level.sendParticles(beamGlow, px, targetPos.y, pz, 2, 0.1, 0.1, 0.1, 0.02);
+        // Impact at target
+        blast.level.sendParticles(ParticleTypes.FLASH, targetPos.x, targetPos.y, targetPos.z, 1, 0, 0, 0, 0);
+        blast.level.sendParticles(ParticleTypes.END_ROD, targetPos.x, targetPos.y, targetPos.z, 3, 0.3, 0.3, 0.3, 0.1);
+        for (int i = 0; i < 6; i++) {
+            double angle = (Math.PI * 2.0 / 6) * i + localTick * 0.4;
+            blast.level.sendParticles(beamGlow,
+                    targetPos.x + Math.cos(angle) * 1.2, targetPos.y,
+                    targetPos.z + Math.sin(angle) * 1.2, 1, 0.05, 0.05, 0.05, 0.01);
         }
 
         // Sounds
         if (localTick % 10 == 0) {
             blast.level.playSound(null, blast.target.blockPosition(),
                     SoundEvents.WARDEN_SONIC_BOOM, SoundSource.PLAYERS, 1.5f, 0.5f);
-            blast.level.playSound(null, blast.target.blockPosition(),
-                    SoundEvents.GENERIC_EXPLODE, SoundSource.PLAYERS, 1.0f, 1.0f);
         }
         if (localTick == 0) {
             blast.level.playSound(null, blast.owner.blockPosition(),
@@ -276,23 +403,34 @@ public class EarthBlasterManager {
         if (localTick == 49) {
             blast.level.sendParticles(ParticleTypes.EXPLOSION_EMITTER,
                     targetPos.x, targetPos.y, targetPos.z, 1, 0, 0, 0, 0);
-            var finalDust = new DustParticleOptions(new Vector3f(1.0f, 0.8f, 0.2f), 5.0f);
-            blast.level.sendParticles(finalDust,
-                    targetPos.x, targetPos.y, targetPos.z, 40, 2, 2, 2, 0.15);
-            blast.level.sendParticles(ParticleTypes.END_ROD,
-                    targetPos.x, targetPos.y + 1, targetPos.z, 25, 1.5, 1.5, 1.5, 0.2);
+            var finalDust = new DustParticleOptions(new Vector3f(0.8f, 0.9f, 1.0f), 5.0f);
+            blast.level.sendParticles(finalDust, targetPos.x, targetPos.y, targetPos.z, 40, 2, 2, 2, 0.15);
+            blast.level.sendParticles(ParticleTypes.END_ROD, targetPos.x, targetPos.y + 1, targetPos.z, 25, 1.5, 1.5, 1.5, 0.2);
 
             blast.target.hurt(blast.level.damageSources().magic(), 15.0f);
 
             blast.level.playSound(null, blast.target.blockPosition(),
                     SoundEvents.GENERIC_EXPLODE, SoundSource.PLAYERS, 2.0f, 0.3f);
-            blast.level.playSound(null, blast.target.blockPosition(),
-                    SoundEvents.LIGHTNING_BOLT_THUNDER, SoundSource.PLAYERS, 2.0f, 0.5f);
 
             if (blast.owner != null && blast.owner.isAlive()) {
                 blast.owner.sendSystemMessage(net.minecraft.network.chat.Component.literal(">> Les Gaster Blasters se sont dechaines!")
                         .withStyle(net.minecraft.ChatFormatting.GOLD, net.minecraft.ChatFormatting.BOLD));
             }
+        }
+    }
+
+    // ==========================================
+    // UTILITY RENDERING
+    // ==========================================
+
+    private static void renderWarningLine(ServerLevel level, double x1, double y1, double z1,
+                                           double x2, double y2, double z2, DustParticleOptions dust) {
+        int steps = 25;
+        for (int i = 0; i < steps; i++) {
+            double t = i / (double)steps;
+            level.sendParticles(dust,
+                    x1 + (x2 - x1) * t, y1 + (y2 - y1) * t, z1 + (z2 - z1) * t,
+                    1, 0.02, 0.02, 0.02, 0);
         }
     }
 
@@ -307,18 +445,16 @@ public class EarthBlasterManager {
             double py = y1 + (y2 - y1) * t;
             double pz = z1 + (z2 - z1) * t;
 
-            // Thick beam: core + outer ring
+            // Core (white bright center)
             level.sendParticles(core, px, py, pz, 2, 0.05, 0.05, 0.05, 0);
+            // Outer with wobble
+            double wobble = Math.sin(tick * 0.5 + i * 0.3) * 0.25;
+            level.sendParticles(outer, px + wobble, py + wobble * 0.3, pz - wobble, 2, 0.12, 0.08, 0.12, 0.01);
+            level.sendParticles(outer, px - wobble, py - wobble * 0.3, pz + wobble, 2, 0.12, 0.08, 0.12, 0.01);
 
-            // Outer beam with wobble
-            double wobble = Math.sin(tick * 0.5 + i * 0.3) * 0.3;
-            level.sendParticles(outer, px + wobble, py, pz + wobble, 2, 0.15, 0.1, 0.15, 0.01);
-            level.sendParticles(outer, px - wobble, py, pz - wobble, 2, 0.15, 0.1, 0.15, 0.01);
-
-            // Scattered glow
             if (i % 3 == 0) {
-                level.sendParticles(glow, px, py + 0.3, pz, 1, 0.2, 0.2, 0.2, 0.02);
-                level.sendParticles(ParticleTypes.ELECTRIC_SPARK, px, py, pz, 2, 0.2, 0.2, 0.2, 0.05);
+                level.sendParticles(glow, px, py + 0.2, pz, 1, 0.15, 0.15, 0.15, 0.02);
+                level.sendParticles(ParticleTypes.ELECTRIC_SPARK, px, py, pz, 2, 0.15, 0.15, 0.15, 0.04);
             }
         }
     }
