@@ -10,6 +10,7 @@ import com.noxgg.elementalpower.world.SoulTsunamiManager;
 import com.noxgg.elementalpower.world.SpiritManager;
 import com.noxgg.elementalpower.world.DarkPrisonManager;
 import com.noxgg.elementalpower.world.PoisonDragonManager;
+import com.noxgg.elementalpower.world.TimeAbyssManager;
 import com.noxgg.elementalpower.world.TimeDomeManager;
 import com.noxgg.elementalpower.element.ElementType;
 import com.noxgg.elementalpower.element.PlayerElementProvider;
@@ -78,6 +79,7 @@ public class ModEvents {
     public static void onServerTick(TickEvent.ServerTickEvent event) {
         if (event.phase == TickEvent.Phase.END) {
             TimeDomeManager.tick();
+            TimeAbyssManager.tick();
             DarkPrisonManager.tick();
             PoisonDragonManager.tick();
             BlackHoleManager.tick();

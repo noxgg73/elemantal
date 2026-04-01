@@ -40,7 +40,7 @@ public class DarkPrisonC2SPacket {
                 if (element != ElementType.DARKNESS && element != ElementType.POISON
                         && element != ElementType.ROYAL && element != ElementType.SPACE
                         && element != ElementType.DEMON && element != ElementType.NATURE
-                        && element != ElementType.AIR) {
+                        && element != ElementType.AIR && element != ElementType.TIME) {
                     player.sendSystemMessage(Component.literal("Ce sort n'est pas disponible pour ta classe!")
                             .withStyle(ChatFormatting.RED));
                     return;
@@ -167,6 +167,74 @@ public class DarkPrisonC2SPacket {
                             .withStyle(ChatFormatting.DARK_RED, ChatFormatting.BOLD)
                             .append(net.minecraft.network.chat.Component.literal("Une vague d'ames deferle devant vous!")
                                     .withStyle(ChatFormatting.RED)));
+                    return;
+                }
+
+                // TIME: Abime du Temps - target the looked-at mob
+                if (element == ElementType.TIME) {
+                    Vec3 timeEye = player.getEyePosition();
+                    Vec3 timeLook = player.getLookAngle();
+                    LivingEntity timeTarget = null;
+                    double timeClosest = 30.0;
+
+                    for (Entity entity : level.getEntities(player,
+                            player.getBoundingBox().inflate(30),
+                            e -> e instanceof LivingEntity && e != player)) {
+                        LivingEntity living = (LivingEntity) entity;
+                        Vec3 toEntity = living.position().add(0, living.getBbHeight() / 2, 0).subtract(timeEye);
+                        double dist = toEntity.length();
+                        if (dist > timeClosest) continue;
+                        Vec3 toEntityNorm = toEntity.normalize();
+                        if (timeLook.dot(toEntityNorm) > 0.95) {
+                            timeClosest = dist;
+                            timeTarget = living;
+                        }
+                    }
+
+                    if (timeTarget == null) {
+                        player.sendSystemMessage(Component.literal("Aucune cible en vue!")
+                                .withStyle(ChatFormatting.GRAY));
+                        return;
+                    }
+
+                    // Launch the Time Abyss
+                    com.noxgg.elementalpower.world.TimeAbyssManager.addAbyss(
+                            new com.noxgg.elementalpower.world.TimeAbyssManager.TimeAbyss(
+                                    level, player, timeTarget));
+
+                    // Freeze target immediately
+                    timeTarget.setDeltaMovement(0, 0, 0);
+                    timeTarget.hurtMarked = true;
+
+                    // Initial casting beam from player to target
+                    Vec3 targetPos = timeTarget.position();
+                    var timeDust = new net.minecraft.core.particles.DustParticleOptions(
+                            new org.joml.Vector3f(0.1f, 0.9f, 0.4f), 1.5f);
+                    for (int i = 0; i < 20; i++) {
+                        double t = i / 20.0;
+                        double px = player.getX() + (targetPos.x - player.getX()) * t;
+                        double py = player.getEyeY() + (targetPos.y + 1 - player.getEyeY()) * t;
+                        double pz = player.getZ() + (targetPos.z - player.getZ()) * t;
+                        level.sendParticles(timeDust, px, py, pz, 3, 0.05, 0.05, 0.05, 0.01);
+                        level.sendParticles(ParticleTypes.END_ROD, px, py, pz, 1, 0.02, 0.02, 0.02, 0.005);
+                    }
+
+                    // Vortex burst at target location
+                    for (int i = 0; i < 40; i++) {
+                        double angle = (Math.PI * 2.0 / 40) * i;
+                        double px = targetPos.x + Math.cos(angle) * 2.0;
+                        double pz = targetPos.z + Math.sin(angle) * 2.0;
+                        level.sendParticles(ParticleTypes.PORTAL,
+                                px, targetPos.y + 0.5, pz, 5, 0.1, 0.3, 0.1, 0.5);
+                    }
+
+                    level.playSound(null, timeTarget.blockPosition(), SoundEvents.END_PORTAL_SPAWN, SoundSource.PLAYERS, 1.5f, 1.5f);
+                    level.playSound(null, timeTarget.blockPosition(), SoundEvents.BELL_RESONATE, SoundSource.PLAYERS, 2.0f, 0.5f);
+
+                    player.sendSystemMessage(Component.literal(">> Abime du Temps invoque! ")
+                            .withStyle(ChatFormatting.GREEN, ChatFormatting.BOLD)
+                            .append(Component.literal("La cible est aspiree dans le vortex temporel... elle vieillira et sera bombardee!")
+                                    .withStyle(ChatFormatting.DARK_GREEN)));
                     return;
                 }
 
