@@ -367,6 +367,33 @@ public class TimeAbyssManager {
         }
     }
 
+    /**
+     * Renders a 3D sphere made of particles at the given position.
+     * Uses horizontal rings at multiple latitudes to form a solid sphere shape.
+     */
+    private static void renderParticleSphere(ServerLevel level, double cx, double cy, double cz,
+                                              double radius, DustParticleOptions dust, int density) {
+        // Horizontal rings at different latitudes (phi = latitude angle)
+        int rings = Math.max(4, density / 2);
+        for (int r = 0; r < rings; r++) {
+            double phi = (Math.PI / (rings + 1)) * (r + 1); // from top to bottom
+            double ringRadius = Math.sin(phi) * radius;
+            double ringY = cy + Math.cos(phi) * radius;
+
+            int pointsInRing = Math.max(6, (int)(ringRadius * density * 0.6));
+            for (int p = 0; p < pointsInRing; p++) {
+                double theta = (Math.PI * 2.0 / pointsInRing) * p;
+                double px = cx + Math.cos(theta) * ringRadius;
+                double pz = cz + Math.sin(theta) * ringRadius;
+                level.sendParticles(dust, px, ringY, pz, 1, 0, 0, 0, 0);
+            }
+        }
+
+        // Top and bottom poles
+        level.sendParticles(dust, cx, cy + radius, cz, 1, 0, 0, 0, 0);
+        level.sendParticles(dust, cx, cy - radius, cz, 1, 0, 0, 0, 0);
+    }
+
     private static void tickBombardment(TimeAbyss abyss) {
         LivingEntity target = abyss.target;
         int localTick = abyss.ticksElapsed - 240;
@@ -381,34 +408,47 @@ public class TimeAbyssManager {
         target.setDeltaMovement(0, 0, 0);
         target.hurtMarked = true;
 
-        // Green energy spheres every 5 ticks
-        if (localTick % 5 == 0) {
-            double sphereStartY = ty + 10;
-            var greenEnergy = new DustParticleOptions(new Vector3f(0.0f, 1.0f, 0.2f), 3.0f);
-            var greenCore = new DustParticleOptions(new Vector3f(0.3f, 1.0f, 0.5f), 2.0f);
-            var greenGlow = new DustParticleOptions(new Vector3f(0.1f, 0.8f, 0.3f), 1.5f);
+        // === TRUE 3D SPHERE BOMBARDMENT ===
+        // Every 8 ticks, a real sphere falls from the sky onto the mob
+        if (localTick % 8 == 0) {
+            double sphereRadius = 0.6;
+            var sphereOuter = new DustParticleOptions(new Vector3f(0.0f, 1.0f, 0.2f), 2.0f);
+            var sphereInner = new DustParticleOptions(new Vector3f(0.3f, 1.0f, 0.5f), 1.5f);
+            var trailDust = new DustParticleOptions(new Vector3f(0.1f, 0.8f, 0.3f), 1.0f);
 
-            double offsetX = (abyss.level.random.nextDouble() - 0.5) * 2.0;
-            double offsetZ = (abyss.level.random.nextDouble() - 0.5) * 2.0;
+            // Random offset for variety
+            double offsetX = (abyss.level.random.nextDouble() - 0.5) * 3.0;
+            double offsetZ = (abyss.level.random.nextDouble() - 0.5) * 3.0;
 
-            for (int i = 0; i < 20; i++) {
-                double progress = i / 20.0;
-                double py = sphereStartY - (sphereStartY - ty - 1) * progress;
-                double px = tx + offsetX * progress;
-                double pz = tz + offsetZ * progress;
-                abyss.level.sendParticles(greenEnergy, px, py, pz, 2, 0.1, 0.1, 0.1, 0.01);
-                abyss.level.sendParticles(greenGlow, px, py, pz, 1, 0.05, 0.05, 0.05, 0.005);
+            // Animate the sphere falling: render at multiple positions along the fall path
+            double startY = ty + 12;
+            double endY = ty + 1;
+            int fallSteps = 6;
+            for (int step = 0; step < fallSteps; step++) {
+                double fallProgress = step / (double)(fallSteps - 1);
+                double sphereX = tx + offsetX * (1.0 - fallProgress);
+                double sphereY = startY - (startY - endY) * fallProgress;
+                double sphereZ = tz + offsetZ * (1.0 - fallProgress);
+
+                // Smaller sphere size along the trail, full size at impact
+                double trailRadius = sphereRadius * (0.3 + 0.7 * fallProgress);
+                if (step < fallSteps - 1) {
+                    // Trail: smaller fading spheres
+                    renderParticleSphere(abyss.level, sphereX, sphereY, sphereZ,
+                            trailRadius, trailDust, 4);
+                } else {
+                    // Impact: full sphere
+                    renderParticleSphere(abyss.level, sphereX, sphereY, sphereZ,
+                            sphereRadius, sphereOuter, 8);
+                    // Inner glow core
+                    renderParticleSphere(abyss.level, sphereX, sphereY, sphereZ,
+                            sphereRadius * 0.5, sphereInner, 5);
+                }
             }
 
-            for (int i = 0; i < 15; i++) {
-                double angle = (Math.PI * 2.0 / 15) * i;
-                double px = tx + Math.cos(angle) * 1.0;
-                double pz = tz + Math.sin(angle) * 1.0;
-                abyss.level.sendParticles(greenCore, px, ty + 1, pz, 3, 0.2, 0.2, 0.2, 0.05);
-            }
-
-            abyss.level.sendParticles(ParticleTypes.HAPPY_VILLAGER, tx, ty + 1, tz, 15, 0.8, 0.8, 0.8, 0.1);
-            abyss.level.sendParticles(ParticleTypes.END_ROD, tx, ty + 1, tz, 8, 0.5, 0.5, 0.5, 0.1);
+            // Impact explosion at target
+            abyss.level.sendParticles(ParticleTypes.HAPPY_VILLAGER, tx, ty + 1, tz, 10, 0.5, 0.5, 0.5, 0.1);
+            abyss.level.sendParticles(ParticleTypes.END_ROD, tx, ty + 1, tz, 5, 0.3, 0.3, 0.3, 0.08);
 
             target.hurt(abyss.level.damageSources().magic(), 4.0f);
 
@@ -416,28 +456,34 @@ public class TimeAbyssManager {
                     SoundEvents.FIREWORK_ROCKET_BLAST, SoundSource.HOSTILE, 1.0f, 0.8f);
         }
 
-        // Green aura
+        // === 4 ORBITING 3D SPHERES around the target ===
         if (localTick % 2 == 0) {
+            var orbitDust = new DustParticleOptions(new Vector3f(0.0f, 1.0f, 0.0f), 1.8f);
+            var orbitGlow = new DustParticleOptions(new Vector3f(0.2f, 0.9f, 0.4f), 1.2f);
+            for (int orb = 0; orb < 4; orb++) {
+                double angle = (abyss.ticksElapsed * 0.12) + (Math.PI * 2.0 / 4) * orb;
+                double orbR = 2.5;
+                double orbX = tx + Math.cos(angle) * orbR;
+                double orbY = ty + 2.0 + Math.sin(abyss.ticksElapsed * 0.2 + orb) * 1.0;
+                double orbZ = tz + Math.sin(angle) * orbR;
+
+                // Render each orbiting object as a small 3D sphere
+                renderParticleSphere(abyss.level, orbX, orbY, orbZ, 0.35, orbitDust, 5);
+                // Inner core glow
+                abyss.level.sendParticles(orbitGlow, orbX, orbY, orbZ, 2, 0.05, 0.05, 0.05, 0.01);
+                abyss.level.sendParticles(ParticleTypes.ELECTRIC_SPARK, orbX, orbY, orbZ, 1, 0.05, 0.05, 0.05, 0.02);
+            }
+        }
+
+        // Green aura around target
+        if (localTick % 3 == 0) {
             var auraDust = new DustParticleOptions(new Vector3f(0.0f, 0.9f, 0.2f), 1.0f);
-            for (int i = 0; i < 8; i++) {
-                double angle = (abyss.ticksElapsed * 0.4) + (Math.PI * 2.0 / 8) * i;
+            for (int i = 0; i < 6; i++) {
+                double angle = (abyss.ticksElapsed * 0.4) + (Math.PI * 2.0 / 6) * i;
                 double px = tx + Math.cos(angle) * 1.2;
                 double pz = tz + Math.sin(angle) * 1.2;
                 double py = ty + 0.5 + Math.sin(abyss.ticksElapsed * 0.3 + i) * 0.5;
                 abyss.level.sendParticles(auraDust, px, py, pz, 1, 0.05, 0.05, 0.05, 0.01);
-            }
-        }
-
-        // Orbiting spheres
-        if (localTick % 3 == 0) {
-            var orbitDust = new DustParticleOptions(new Vector3f(0.0f, 1.0f, 0.0f), 2.5f);
-            for (int orb = 0; orb < 4; orb++) {
-                double angle = (abyss.ticksElapsed * 0.15) + (Math.PI * 2.0 / 4) * orb;
-                double orbY = ty + 2 + Math.sin(abyss.ticksElapsed * 0.2 + orb) * 1.5;
-                double orbX = tx + Math.cos(angle) * 2.5;
-                double orbZ = tz + Math.sin(angle) * 2.5;
-                abyss.level.sendParticles(orbitDust, orbX, orbY, orbZ, 3, 0.1, 0.1, 0.1, 0.01);
-                abyss.level.sendParticles(ParticleTypes.ELECTRIC_SPARK, orbX, orbY, orbZ, 2, 0.05, 0.05, 0.05, 0.02);
             }
         }
 
@@ -448,10 +494,17 @@ public class TimeAbyssManager {
                     SoundEvents.WARDEN_SONIC_BOOM, SoundSource.HOSTILE, 0.5f, 1.5f);
         }
 
-        // Final explosion
+        // === FINAL EXPLOSION: giant green sphere then burst ===
         if (localTick == 99) {
-            var finalGreen = new DustParticleOptions(new Vector3f(0.0f, 1.0f, 0.1f), 4.0f);
-            abyss.level.sendParticles(finalGreen, tx, ty + 1, tz, 50, 2, 2, 2, 0.2);
+            var finalSphere = new DustParticleOptions(new Vector3f(0.0f, 1.0f, 0.1f), 3.0f);
+            var finalCore = new DustParticleOptions(new Vector3f(0.4f, 1.0f, 0.6f), 2.5f);
+
+            // Giant final sphere expanding outward
+            for (double r = 0.5; r <= 2.5; r += 0.5) {
+                renderParticleSphere(abyss.level, tx, ty + 1, tz, r, finalSphere, 10);
+            }
+            renderParticleSphere(abyss.level, tx, ty + 1, tz, 1.0, finalCore, 8);
+
             abyss.level.sendParticles(ParticleTypes.FLASH, tx, ty + 1, tz, 5, 0, 0, 0, 0);
             abyss.level.sendParticles(ParticleTypes.EXPLOSION, tx, ty + 1, tz, 3, 0.5, 0.5, 0.5, 0);
             abyss.level.sendParticles(ParticleTypes.END_ROD, tx, ty + 2, tz, 30, 1.5, 1.5, 1.5, 0.15);
