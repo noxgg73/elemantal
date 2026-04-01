@@ -65,9 +65,11 @@ public class UndertaleBattleScreen extends Screen {
     // Sub-menu
     private String currentMenu = "main";
 
-    // Player HP tracking for client-side display during dodge
-    private float displayPlayerHp = 20;
-    private float displayPlayerMaxHp = 20;
+    // Undertale HP system: 20 HP max, each hit = 3 damage, die at 0
+    private static final float UT_MAX_HP = 20;
+    private static final float UT_HIT_DAMAGE = 3;
+    private float utPlayerHp = UT_MAX_HP;
+    private int totalDamageTaken = 0; // track total damage to send to server
 
     public UndertaleBattleScreen(int entityId, String mobName, float mobHealth, float mobMaxHealth, boolean isFrisk) {
         super(Component.literal("Undertale Battle"));
@@ -89,11 +91,6 @@ public class UndertaleBattleScreen extends Screen {
 
         soulX = boxX + boxW / 2.0;
         soulY = boxY + boxH / 2.0;
-
-        if (minecraft != null && minecraft.player != null) {
-            displayPlayerHp = minecraft.player.getHealth();
-            displayPlayerMaxHp = minecraft.player.getMaxHealth();
-        }
 
         setupMainButtons();
     }
@@ -244,9 +241,12 @@ public class UndertaleBattleScreen extends Screen {
         g.fill(0, 0, this.width, this.height, 0xFF000000);
         long now = System.currentTimeMillis();
 
-        if (minecraft != null && minecraft.player != null) {
-            displayPlayerHp = minecraft.player.getHealth();
-            displayPlayerMaxHp = minecraft.player.getMaxHealth();
+        // Check death
+        if (utPlayerHp <= 0) {
+            utPlayerHp = 0;
+            ModMessages.sendToServer(new UndertaleBattleActionC2SPacket(entityId, "playerdeath"));
+            this.onClose();
+            return;
         }
 
         renderEnemyArea(g);
@@ -302,10 +302,11 @@ public class UndertaleBattleScreen extends Screen {
         int barX = boxX + this.font.width(playerName) + 10;
         g.drawString(this.font, "HP", barX, y, 0xFFFFFF);
         barX += 14;
-        g.fill(barX, y, barX + barW, y + 10, 0xFF333300);
-        float ratio = displayPlayerMaxHp > 0 ? displayPlayerHp / displayPlayerMaxHp : 0;
+        // Red background = damage taken, yellow = remaining HP
+        g.fill(barX, y, barX + barW, y + 10, 0xFFCC0000);
+        float ratio = utPlayerHp / UT_MAX_HP;
         g.fill(barX, y, barX + (int)(barW * Math.max(0, ratio)), y + 10, 0xFFFFFF00);
-        g.drawString(this.font, (int)displayPlayerHp + " / " + (int)displayPlayerMaxHp, barX + barW + 5, y, 0xFFFFFF);
+        g.drawString(this.font, (int)utPlayerHp + " / " + (int)UT_MAX_HP, barX + barW + 5, y, 0xFFFFFF);
     }
 
     private void renderBattleBox(GuiGraphics g, long now) {
@@ -378,8 +379,18 @@ public class UndertaleBattleScreen extends Screen {
         // Check if enemy turn is over -> back to player turn
         if (elapsed > ENEMY_TURN_DURATION) {
             phase = TurnPhase.PLAYER_TURN;
-            // Send damage report to server (enemy turn ends = mob counter-attacks)
-            ModMessages.sendToServer(new UndertaleBattleActionC2SPacket(entityId, "endturn"));
+            // Send damage taken to server
+            ModMessages.sendToServer(new UndertaleBattleActionC2SPacket(entityId,
+                    "endturn:" + totalDamageTaken));
+            totalDamageTaken = 0;
+
+            // Check if player died during dodge
+            if (utPlayerHp <= 0) {
+                ModMessages.sendToServer(new UndertaleBattleActionC2SPacket(entityId, "playerdeath"));
+                this.onClose();
+                return;
+            }
+
             setupMainButtons();
             dialogText = "* C'est ton tour.";
             dialogStart = System.currentTimeMillis();
@@ -461,14 +472,15 @@ public class UndertaleBattleScreen extends Screen {
                     g.fill(bx - Math.abs(perpX), by - Math.abs(perpY),
                             bx + Math.abs(perpX) + 1, by + Math.abs(perpY) + 1, 0xFFFFFFFF);
 
-                    // Check collision with soul
+                    // Check collision with soul - each hit = 3 damage
                     double dx = bx - soulX;
                     double dy = by - soulY;
-                    if (dx * dx + dy * dy < 100 && now - lastDamageTick > 200) {
+                    if (dx * dx + dy * dy < 100 && now - lastDamageTick > 400) {
                         damageFlash = true;
                         damageFlashStart = now;
                         lastDamageTick = now;
-                        displayPlayerHp = Math.max(0, displayPlayerHp - 1);
+                        utPlayerHp -= UT_HIT_DAMAGE;
+                        totalDamageTaken += (int)UT_HIT_DAMAGE;
                     }
                 }
             }
@@ -489,11 +501,12 @@ public class UndertaleBattleScreen extends Screen {
 
             double dx = boneX[i] - soulX;
             double dy = boneY[i] - soulY;
-            if (dx * dx + dy * dy < 64 && now - lastDamageTick > 300) {
+            if (dx * dx + dy * dy < 64 && now - lastDamageTick > 400) {
                 damageFlash = true;
                 damageFlashStart = now;
                 lastDamageTick = now;
-                displayPlayerHp = Math.max(0, displayPlayerHp - 0.5f);
+                utPlayerHp -= UT_HIT_DAMAGE;
+                totalDamageTaken += (int)UT_HIT_DAMAGE;
             }
         }
 

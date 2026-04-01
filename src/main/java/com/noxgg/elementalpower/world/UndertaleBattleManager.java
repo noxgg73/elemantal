@@ -158,35 +158,49 @@ public class UndertaleBattleManager {
                 }
             }
 
-            case "endturn" -> {
-                // Enemy turn ended (Gaster Blaster phase over)
-                float mobDamage = 2.0f + battle.target.getMaxHealth() * 0.1f;
-                player.hurt(level.damageSources().mobAttack(battle.target), mobDamage);
+            case "playerdeath" -> {
+                // Player died in Undertale combat (took 20+ damage total)
+                player.hurt(level.damageSources().mobAttack(battle.target), 999.0f);
+                endBattle(player, "playerdeath");
+            }
 
-                level.sendParticles(ParticleTypes.DAMAGE_INDICATOR,
-                        player.getX(), player.getY() + 1, player.getZ(),
-                        3, 0.2, 0.3, 0.2, 0.1);
-                level.playSound(null, player.blockPosition(),
-                        SoundEvents.PLAYER_HURT, SoundSource.PLAYERS, 0.5f, 1.0f);
+            default -> {
+                // Handle "endturn:X" where X is damage taken during dodge phase
+                if (action.startsWith("endturn:")) {
+                    int damageTaken = 0;
+                    try { damageTaken = Integer.parseInt(action.substring(8)); } catch (NumberFormatException ignored) {}
 
-                player.sendSystemMessage(Component.literal("")
-                        .append(Component.literal("* ").withStyle(ChatFormatting.WHITE))
-                        .append(Component.literal("Les Gaster Blasters se dissipent... ").withStyle(ChatFormatting.GRAY))
-                        .append(Component.literal("-" + (int)mobDamage + " PV").withStyle(ChatFormatting.DARK_RED)));
+                    // Apply real damage to player based on hits taken
+                    if (damageTaken > 0) {
+                        // Scale: each 3 UT damage = some real damage
+                        float realDamage = damageTaken * 0.5f;
+                        player.hurt(level.damageSources().mobAttack(battle.target), realDamage);
 
-                // Check if player died
-                if (!player.isAlive() || player.getHealth() <= 0) {
-                    endBattle(player, "playerdeath");
-                    return;
+                        level.sendParticles(ParticleTypes.DAMAGE_INDICATOR,
+                                player.getX(), player.getY() + 1, player.getZ(),
+                                3, 0.2, 0.3, 0.2, 0.1);
+
+                        player.sendSystemMessage(Component.literal("")
+                                .append(Component.literal("* ").withStyle(ChatFormatting.WHITE))
+                                .append(Component.literal("Les Gaster Blasters se dissipent... ").withStyle(ChatFormatting.GRAY))
+                                .append(Component.literal("-" + damageTaken + " PV").withStyle(ChatFormatting.DARK_RED)));
+                    } else {
+                        player.sendSystemMessage(Component.literal("")
+                                .append(Component.literal("* ").withStyle(ChatFormatting.YELLOW))
+                                .append(Component.literal("Tu as tout esquive!").withStyle(ChatFormatting.GREEN)));
+                    }
+
+                    level.playSound(null, player.blockPosition(),
+                            SoundEvents.PLAYER_HURT, SoundSource.PLAYERS, 0.5f, 1.0f);
+
+                    // Refresh screen for next player turn
+                    ModMessages.sendToPlayer(new OpenUndertaleBattleS2CPacket(
+                            battle.target.getId(),
+                            battle.target.getType().getDescription().getString(),
+                            battle.target.getHealth(),
+                            battle.target.getMaxHealth(),
+                            data.isFrisk()), player);
                 }
-
-                // Refresh screen for next player turn
-                ModMessages.sendToPlayer(new OpenUndertaleBattleS2CPacket(
-                        battle.target.getId(),
-                        battle.target.getType().getDescription().getString(),
-                        battle.target.getHealth(),
-                        battle.target.getMaxHealth(),
-                        data.isFrisk()), player);
             }
 
             case "flee" -> {
