@@ -41,7 +41,7 @@ public class DarkPrisonC2SPacket {
                         && element != ElementType.ROYAL && element != ElementType.SPACE
                         && element != ElementType.DEMON && element != ElementType.NATURE
                         && element != ElementType.AIR && element != ElementType.TIME
-                        && element != ElementType.UNDERTALE) {
+                        && element != ElementType.UNDERTALE && element != ElementType.EARTH) {
                     player.sendSystemMessage(Component.literal("Ce sort n'est pas disponible pour ta classe!")
                             .withStyle(ChatFormatting.RED));
                     return;
@@ -55,6 +55,61 @@ public class DarkPrisonC2SPacket {
                 }
 
                 ServerLevel level = player.serverLevel();
+
+                // EARTH: Twin Gaster Blasters
+                if (element == ElementType.EARTH) {
+                    Vec3 earthEye = player.getEyePosition();
+                    Vec3 earthLook = player.getLookAngle();
+                    LivingEntity earthTarget = null;
+                    double earthClosest = 40.0;
+
+                    for (Entity entity : level.getEntities(player,
+                            player.getBoundingBox().inflate(40),
+                            e -> e instanceof LivingEntity && e != player)) {
+                        LivingEntity living = (LivingEntity) entity;
+                        Vec3 toEntity = living.position().add(0, living.getBbHeight() / 2, 0).subtract(earthEye);
+                        double dist = toEntity.length();
+                        if (dist > earthClosest) continue;
+                        Vec3 toEntityNorm = toEntity.normalize();
+                        if (earthLook.dot(toEntityNorm) > 0.9) {
+                            earthClosest = dist;
+                            earthTarget = living;
+                        }
+                    }
+
+                    if (earthTarget == null) {
+                        player.sendSystemMessage(Component.literal("Aucune cible en vue!")
+                                .withStyle(ChatFormatting.GRAY));
+                        return;
+                    }
+
+                    // Launch the Earth Gaster Blasters
+                    com.noxgg.elementalpower.world.EarthBlasterManager.addBlast(
+                            new com.noxgg.elementalpower.world.EarthBlasterManager.EarthBlast(
+                                    level, player, earthTarget));
+
+                    // Initial casting particles
+                    Vec3 tp = earthTarget.position();
+                    var brownDust = new net.minecraft.core.particles.DustParticleOptions(
+                            new org.joml.Vector3f(0.6f, 0.4f, 0.1f), 2.0f);
+                    level.sendParticles(brownDust,
+                            player.getX(), player.getY() + 1, player.getZ(),
+                            20, 0.5, 0.5, 0.5, 0.05);
+                    level.sendParticles(net.minecraft.core.particles.ParticleTypes.ELECTRIC_SPARK,
+                            player.getX(), player.getY() + 2, player.getZ(),
+                            10, 0.3, 0.3, 0.3, 0.1);
+
+                    level.playSound(null, player.blockPosition(),
+                            net.minecraft.sounds.SoundEvents.WARDEN_SONIC_CHARGE, net.minecraft.sounds.SoundSource.PLAYERS, 2.0f, 0.5f);
+                    level.playSound(null, player.blockPosition(),
+                            net.minecraft.sounds.SoundEvents.END_PORTAL_SPAWN, net.minecraft.sounds.SoundSource.PLAYERS, 1.0f, 0.8f);
+
+                    player.sendSystemMessage(Component.literal(">> Gaster Blasters de Terre invoques! ")
+                            .withStyle(ChatFormatting.GOLD, ChatFormatting.BOLD)
+                            .append(Component.literal("Deux canons geants convergent sur la cible!")
+                                    .withStyle(ChatFormatting.YELLOW)));
+                    return;
+                }
 
                 // UNDERTALE FRISK: SPARE mechanic
                 if (element == ElementType.UNDERTALE && data.isFrisk()) {
