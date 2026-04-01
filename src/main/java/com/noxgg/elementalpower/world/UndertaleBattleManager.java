@@ -118,16 +118,9 @@ public class UndertaleBattleManager {
                     return;
                 }
 
-                // Mob counter-attacks the player (server side damage)
-                mobCounterAttack(player, battle);
-
-                // Refresh battle screen with updated health
-                ModMessages.sendToPlayer(new OpenUndertaleBattleS2CPacket(
-                        battle.target.getId(),
-                        battle.target.getType().getDescription().getString(),
-                        battle.target.getHealth(),
-                        battle.target.getMaxHealth(),
-                        data.isFrisk()), player);
+                // Enemy will counter-attack with Gaster Blasters (handled client-side)
+                // The client screen starts the enemy turn automatically after attack
+                // Server will receive "endturn" when Gaster Blaster phase ends
             }
 
             case "spare" -> {
@@ -160,17 +153,40 @@ public class UndertaleBattleManager {
                     level.playSound(null, battle.target.blockPosition(),
                             SoundEvents.AMETHYST_BLOCK_CHIME, SoundSource.PLAYERS, 1.0f, 0.8f + battle.spareCount * 0.15f);
 
-                    // Mob still counter-attacks (lighter)
-                    mobCounterAttack(player, battle);
-
-                    // Refresh screen
-                    ModMessages.sendToPlayer(new OpenUndertaleBattleS2CPacket(
-                            battle.target.getId(),
-                            battle.target.getType().getDescription().getString(),
-                            battle.target.getHealth(),
-                            battle.target.getMaxHealth(),
-                            data.isFrisk()), player);
+                    // Enemy counter-attacks with Gaster Blasters (client handles dodge phase)
+                    // Server receives "endturn" when done
                 }
+            }
+
+            case "endturn" -> {
+                // Enemy turn ended (Gaster Blaster phase over)
+                float mobDamage = 2.0f + battle.target.getMaxHealth() * 0.1f;
+                player.hurt(level.damageSources().mobAttack(battle.target), mobDamage);
+
+                level.sendParticles(ParticleTypes.DAMAGE_INDICATOR,
+                        player.getX(), player.getY() + 1, player.getZ(),
+                        3, 0.2, 0.3, 0.2, 0.1);
+                level.playSound(null, player.blockPosition(),
+                        SoundEvents.PLAYER_HURT, SoundSource.PLAYERS, 0.5f, 1.0f);
+
+                player.sendSystemMessage(Component.literal("")
+                        .append(Component.literal("* ").withStyle(ChatFormatting.WHITE))
+                        .append(Component.literal("Les Gaster Blasters se dissipent... ").withStyle(ChatFormatting.GRAY))
+                        .append(Component.literal("-" + (int)mobDamage + " PV").withStyle(ChatFormatting.DARK_RED)));
+
+                // Check if player died
+                if (!player.isAlive() || player.getHealth() <= 0) {
+                    endBattle(player, "playerdeath");
+                    return;
+                }
+
+                // Refresh screen for next player turn
+                ModMessages.sendToPlayer(new OpenUndertaleBattleS2CPacket(
+                        battle.target.getId(),
+                        battle.target.getType().getDescription().getString(),
+                        battle.target.getHealth(),
+                        battle.target.getMaxHealth(),
+                        data.isFrisk()), player);
             }
 
             case "flee" -> {
@@ -291,6 +307,12 @@ public class UndertaleBattleManager {
                 player.sendSystemMessage(Component.literal("")
                         .append(Component.literal("* ").withStyle(ChatFormatting.YELLOW))
                         .append(Component.literal("Tu gagnes 50 XP. L'ennemi est devenu ton ami.").withStyle(ChatFormatting.GREEN)));
+            }
+
+            case "playerdeath" -> {
+                battle.target.removeEffect(MobEffects.MOVEMENT_SLOWDOWN);
+                battle.target.removeEffect(MobEffects.WEAKNESS);
+                // Player died in combat, no message needed
             }
 
             case "flee" -> {
