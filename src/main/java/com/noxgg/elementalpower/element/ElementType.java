@@ -16,7 +16,8 @@ public enum ElementType {
     DEMON("demon", "Demon", ChatFormatting.DARK_RED, 0x8B0000),
     NATURE("nature", "Nature", ChatFormatting.GREEN, 0x228B22),
     LIGHTNING("lightning", "Foudre", ChatFormatting.YELLOW, 0xFFFF00),
-    ROYAL("royal", "Royal", ChatFormatting.GOLD, 0xFFD700);
+    ROYAL("royal", "Royal", ChatFormatting.GOLD, 0xFFD700),
+    UNDERTALE("undertale", "Undertale", ChatFormatting.YELLOW, 0xFFFF00);
 
     private final String id;
     private final String displayName;
@@ -50,6 +51,7 @@ public enum ElementType {
             case NATURE -> "Maitrise de la nature. Regeneration rapide, epines.";
             case LIGHTNING -> "Maitrise de la foudre. Invoque la foudre, vitesse eclair.";
             case ROYAL -> "Pouvoir royal. Force, resistance, aura doree, couronne de puissance.";
+            case UNDERTALE -> "Le pouvoir de la Determination. Choisissez Chara ou Frisk.";
             case NONE -> "Aucun element selectionne.";
         };
     }

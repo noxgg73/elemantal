@@ -13,7 +13,7 @@ public class ElementSelectionScreen extends Screen {
             ElementType.FIRE, ElementType.WATER, ElementType.EARTH, ElementType.AIR,
             ElementType.SPACE, ElementType.TIME, ElementType.POISON, ElementType.DARKNESS,
             ElementType.LIGHT, ElementType.DEMON, ElementType.NATURE, ElementType.LIGHTNING,
-            ElementType.ROYAL
+            ElementType.ROYAL, ElementType.UNDERTALE
     };
 
     private ElementType hoveredElement = null;

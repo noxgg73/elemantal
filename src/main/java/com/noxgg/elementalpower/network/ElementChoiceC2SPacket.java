@@ -41,6 +41,11 @@ public class ElementChoiceC2SPacket {
                         // Sync to client
                         ModMessages.sendToPlayer(new SyncElementS2CPacket(
                                 chosen.getId(), data.getLevel(), data.getXp(), data.getSouls()), player);
+
+                        // If Undertale chosen, open sub-class selection screen
+                        if (chosen == ElementType.UNDERTALE) {
+                            ModMessages.sendToPlayer(new OpenUndertaleScreenS2CPacket(), player);
+                        }
                     });
                 }
             }

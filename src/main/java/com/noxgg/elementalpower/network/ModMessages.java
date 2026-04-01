@@ -95,6 +95,18 @@ public class ModMessages {
                 .encoder(DreamSequenceS2CPacket::toBytes)
                 .consumerMainThread(DreamSequenceS2CPacket::handle)
                 .add();
+
+        net.messageBuilder(OpenUndertaleScreenS2CPacket.class, id(), NetworkDirection.PLAY_TO_CLIENT)
+                .decoder(OpenUndertaleScreenS2CPacket::new)
+                .encoder(OpenUndertaleScreenS2CPacket::toBytes)
+                .consumerMainThread(OpenUndertaleScreenS2CPacket::handle)
+                .add();
+
+        net.messageBuilder(UndertaleSubClassC2SPacket.class, id(), NetworkDirection.PLAY_TO_SERVER)
+                .decoder(UndertaleSubClassC2SPacket::new)
+                .encoder(UndertaleSubClassC2SPacket::toBytes)
+                .consumerMainThread(UndertaleSubClassC2SPacket::handle)
+                .add();
     }
 
     public static <MSG> void sendToServer(MSG message) {

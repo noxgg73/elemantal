@@ -40,7 +40,8 @@ public class DarkPrisonC2SPacket {
                 if (element != ElementType.DARKNESS && element != ElementType.POISON
                         && element != ElementType.ROYAL && element != ElementType.SPACE
                         && element != ElementType.DEMON && element != ElementType.NATURE
-                        && element != ElementType.AIR && element != ElementType.TIME) {
+                        && element != ElementType.AIR && element != ElementType.TIME
+                        && element != ElementType.UNDERTALE) {
                     player.sendSystemMessage(Component.literal("Ce sort n'est pas disponible pour ta classe!")
                             .withStyle(ChatFormatting.RED));
                     return;
@@ -54,6 +55,108 @@ public class DarkPrisonC2SPacket {
                 }
 
                 ServerLevel level = player.serverLevel();
+
+                // UNDERTALE FRISK: SPARE mechanic
+                if (element == ElementType.UNDERTALE && data.isFrisk()) {
+                    Vec3 spareEye = player.getEyePosition();
+                    Vec3 spareLook = player.getLookAngle();
+                    LivingEntity spareTarget = null;
+                    double spareClosest = 20.0;
+
+                    for (Entity entity : level.getEntities(player,
+                            player.getBoundingBox().inflate(20),
+                            e -> e instanceof LivingEntity && e != player && !(e instanceof net.minecraft.world.entity.player.Player))) {
+                        LivingEntity living = (LivingEntity) entity;
+                        Vec3 toEntity = living.position().add(0, living.getBbHeight() / 2, 0).subtract(spareEye);
+                        double dist = toEntity.length();
+                        if (dist > spareClosest) continue;
+                        Vec3 toEntityNorm = toEntity.normalize();
+                        if (spareLook.dot(toEntityNorm) > 0.9) {
+                            spareClosest = dist;
+                            spareTarget = living;
+                        }
+                    }
+
+                    if (spareTarget == null) {
+                        player.sendSystemMessage(Component.literal("")
+                                .append(Component.literal("* ").withStyle(ChatFormatting.YELLOW))
+                                .append(Component.literal("Aucun ennemi en vue a SPARE.").withStyle(ChatFormatting.GRAY)));
+                        return;
+                    }
+
+                    // === SPARE THE MOB ===
+                    LivingEntity target = spareTarget;
+
+                    // Make it peaceful: remove AI hostility, add hearts
+                    if (target instanceof net.minecraft.world.entity.Mob mob) {
+                        mob.setTarget(null);
+                        mob.setNoAi(true); // Stop AI temporarily
+
+                        // After 2 seconds, re-enable AI but peaceful
+                        // The mob will no longer attack because its target is cleared
+                        mob.setPersistenceRequired();
+
+                        // Schedule re-enable AI after a short delay via the mob's persistent data
+                        mob.addEffect(new net.minecraft.world.effect.MobEffectInstance(
+                                net.minecraft.world.effect.MobEffects.REGENERATION, 600, 2, false, true));
+                        mob.addEffect(new net.minecraft.world.effect.MobEffectInstance(
+                                net.minecraft.world.effect.MobEffects.GLOWING, 200, 0, false, false));
+
+                        // Give it a friendly name
+                        String mobName = mob.getType().getDescription().getString();
+                        mob.setCustomName(Component.literal("\u00A7a\u00A7l[Spare] \u00A72" + mobName));
+                        mob.setCustomNameVisible(true);
+                    }
+
+                    // Yellow heart particles from player to target
+                    Vec3 targetPos = target.position();
+                    var yellowDust = new net.minecraft.core.particles.DustParticleOptions(
+                            new org.joml.Vector3f(1.0f, 1.0f, 0.0f), 2.0f);
+                    for (int i = 0; i < 15; i++) {
+                        double t = i / 15.0;
+                        double px = player.getX() + (targetPos.x - player.getX()) * t;
+                        double py = player.getEyeY() + (targetPos.y + 1 - player.getEyeY()) * t;
+                        double pz = player.getZ() + (targetPos.z - player.getZ()) * t;
+                        level.sendParticles(yellowDust, px, py, pz, 2, 0.05, 0.05, 0.05, 0.01);
+                    }
+
+                    // Heart particles above the spared mob
+                    level.sendParticles(net.minecraft.core.particles.ParticleTypes.HEART,
+                            targetPos.x, targetPos.y + target.getBbHeight() + 0.5, targetPos.z,
+                            10, 0.3, 0.3, 0.3, 0.1);
+                    level.sendParticles(yellowDust,
+                            targetPos.x, targetPos.y + 1, targetPos.z,
+                            20, 0.5, 0.5, 0.5, 0.05);
+
+                    // Undertale spare sound
+                    level.playSound(null, target.blockPosition(),
+                            net.minecraft.sounds.SoundEvents.PLAYER_LEVELUP, net.minecraft.sounds.SoundSource.PLAYERS, 1.0f, 1.5f);
+                    level.playSound(null, target.blockPosition(),
+                            net.minecraft.sounds.SoundEvents.AMETHYST_BLOCK_CHIME, net.minecraft.sounds.SoundSource.PLAYERS, 2.0f, 1.2f);
+
+                    // Undertale-style text
+                    player.sendSystemMessage(Component.literal("")
+                            .append(Component.literal("* ").withStyle(ChatFormatting.YELLOW))
+                            .append(Component.literal("Tu as SPARE ").withStyle(ChatFormatting.YELLOW, ChatFormatting.BOLD))
+                            .append(Component.literal(target.getType().getDescription().getString()).withStyle(ChatFormatting.WHITE))
+                            .append(Component.literal("!").withStyle(ChatFormatting.YELLOW, ChatFormatting.BOLD)));
+                    player.sendSystemMessage(Component.literal("")
+                            .append(Component.literal("* ").withStyle(ChatFormatting.YELLOW))
+                            .append(Component.literal("Il est maintenant amical avec toi.").withStyle(ChatFormatting.GREEN)));
+
+                    // Give XP for spare
+                    data.addXp(25);
+                    com.noxgg.elementalpower.event.ElementEvents.syncToClient(player, data);
+                    return;
+                }
+
+                // UNDERTALE CHARA: handled by regular attack (no special G)
+                if (element == ElementType.UNDERTALE && data.isChara()) {
+                    player.sendSystemMessage(Component.literal("")
+                            .append(Component.literal("* ").withStyle(ChatFormatting.DARK_RED))
+                            .append(Component.literal("Les vrais tueurs n'ont pas besoin de sorts. Frappe.").withStyle(ChatFormatting.RED)));
+                    return;
+                }
 
                 // SPACE: Black hole doesn't need a target
                 if (element == ElementType.SPACE) {

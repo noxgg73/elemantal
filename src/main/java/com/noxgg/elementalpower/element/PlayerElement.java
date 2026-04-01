@@ -8,6 +8,7 @@ public class PlayerElement {
     private int level = 1;
     private int xp = 0;
     private int souls = 0;
+    private String subClass = ""; // "chara" or "frisk" for Undertale class
 
     public ElementType getElement() { return element; }
 
@@ -24,6 +25,10 @@ public class PlayerElement {
     public int getLevel() { return level; }
     public int getXp() { return xp; }
     public int getSouls() { return souls; }
+    public String getSubClass() { return subClass; }
+    public void setSubClass(String subClass) { this.subClass = subClass; }
+    public boolean isFrisk() { return "frisk".equals(subClass); }
+    public boolean isChara() { return "chara".equals(subClass); }
 
     public int getXpForNextLevel() {
         return level * 50 + (level * level * 10);
@@ -58,6 +63,7 @@ public class PlayerElement {
         this.level = source.level;
         this.xp = source.xp;
         this.souls = source.souls;
+        this.subClass = source.subClass;
     }
 
     public void saveNBT(CompoundTag tag) {
@@ -66,6 +72,7 @@ public class PlayerElement {
         tag.putInt("level", level);
         tag.putInt("xp", xp);
         tag.putInt("souls", souls);
+        tag.putString("subClass", subClass);
     }
 
     public void loadNBT(CompoundTag tag) {
@@ -75,5 +82,6 @@ public class PlayerElement {
         if (level < 1) level = 1;
         xp = tag.getInt("xp");
         souls = tag.getInt("souls");
+        subClass = tag.getString("subClass");
     }
 }

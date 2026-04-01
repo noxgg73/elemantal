@@ -21,7 +21,10 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.entity.Mob;
 import net.minecraftforge.event.TickEvent;
+import net.minecraftforge.event.entity.living.LivingChangeTargetEvent;
 import net.minecraftforge.event.entity.living.LivingHurtEvent;
 import net.minecraftforge.event.entity.player.PlayerSleepInBedEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -29,6 +32,30 @@ import net.minecraftforge.fml.common.Mod;
 
 @Mod.EventBusSubscriber(modid = ElementalPowerMod.MOD_ID)
 public class ModEvents {
+
+    // Prevent spared mobs from targeting players
+    @SubscribeEvent
+    public static void onMobTarget(LivingChangeTargetEvent event) {
+        if (event.getEntity() instanceof Mob mob) {
+            Component name = mob.getCustomName();
+            if (name != null && name.getString().contains("[Spare]")) {
+                // Spared mob can't attack anyone
+                event.setCanceled(true);
+                mob.setNoAi(false); // Re-enable AI so it can walk around
+            }
+        }
+    }
+
+    // Prevent spared mobs from dealing damage
+    @SubscribeEvent
+    public static void onSparedMobHurt(LivingHurtEvent event) {
+        if (event.getSource().getEntity() instanceof Mob mob) {
+            Component name = mob.getCustomName();
+            if (name != null && name.getString().contains("[Spare]")) {
+                event.setCanceled(true);
+            }
+        }
+    }
 
     @SubscribeEvent
     public static void onLivingHurt(LivingHurtEvent event) {

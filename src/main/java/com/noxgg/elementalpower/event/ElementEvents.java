@@ -78,14 +78,35 @@ public class ElementEvents {
         }
     }
 
+    // === FRISK: Block all attacks from Frisk players ===
+    @SubscribeEvent
+    public static void onFriskAttack(net.minecraftforge.event.entity.player.AttackEntityEvent event) {
+        if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        player.getCapability(PlayerElementProvider.PLAYER_ELEMENT).ifPresent(data -> {
+            if (data.getElement() == ElementType.UNDERTALE && data.isFrisk()) {
+                event.setCanceled(true);
+                player.sendSystemMessage(Component.literal("")
+                        .append(Component.literal("* ").withStyle(ChatFormatting.YELLOW))
+                        .append(Component.literal("Tu ne peux pas attaquer. Utilise G pour SPARE.").withStyle(ChatFormatting.GOLD)));
+            }
+        });
+    }
+
     // === COMBAT MUSIC: Megalovania on hit, stop on kill ===
     @SubscribeEvent
     public static void onLivingHurt(LivingHurtEvent event) {
         Entity attacker = event.getSource().getEntity();
         LivingEntity victim = event.getEntity();
 
-        // Only when a player hits a non-player mob
+        // Block damage from Frisk players entirely
         if (attacker instanceof ServerPlayer player && !(victim instanceof Player)) {
+            player.getCapability(PlayerElementProvider.PLAYER_ELEMENT).ifPresent(data -> {
+                if (data.getElement() == ElementType.UNDERTALE && data.isFrisk()) {
+                    event.setCanceled(true);
+                    return;
+                }
+            });
+            if (event.isCanceled()) return;
             CombatMusicManager.onPlayerHitMob(player);
         }
     }
@@ -286,6 +307,18 @@ public class ElementEvents {
                     player.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SPEED, bonusDuration, 1 + bonusAmplifier, false, false));
                     if (level >= 20) player.addEffect(new MobEffectInstance(MobEffects.DAMAGE_BOOST, bonusDuration, 0, false, false));
                 }
+                case UNDERTALE -> {
+                    // Frisk: regeneration + resistance (pacifist protection)
+                    if (data.isFrisk()) {
+                        player.addEffect(new MobEffectInstance(MobEffects.REGENERATION, bonusDuration, bonusAmplifier, false, false));
+                        player.addEffect(new MobEffectInstance(MobEffects.DAMAGE_RESISTANCE, bonusDuration, 1, false, false));
+                    }
+                    // Chara: damage boost + speed (genocide power)
+                    if (data.isChara()) {
+                        player.addEffect(new MobEffectInstance(MobEffects.DAMAGE_BOOST, bonusDuration, 1 + bonusAmplifier, false, false));
+                        player.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SPEED, bonusDuration, bonusAmplifier, false, false));
+                    }
+                }
                 case ROYAL -> {
                     player.addEffect(new MobEffectInstance(MobEffects.DAMAGE_BOOST, bonusDuration, bonusAmplifier, false, false));
                     player.addEffect(new MobEffectInstance(MobEffects.DAMAGE_RESISTANCE, bonusDuration, bonusAmplifier, false, false));
@@ -308,8 +341,8 @@ public class ElementEvents {
         });
     }
 
-    private static void syncToClient(ServerPlayer player, PlayerElement data) {
+    public static void syncToClient(ServerPlayer player, PlayerElement data) {
         ModMessages.sendToPlayer(new SyncElementS2CPacket(
-                data.getElement().getId(), data.getLevel(), data.getXp(), data.getSouls()), player);
+                data.getElement().getId(), data.getLevel(), data.getXp(), data.getSouls(), data.getSubClass()), player);
     }
 }

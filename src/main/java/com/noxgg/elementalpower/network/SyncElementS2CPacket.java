@@ -13,17 +13,23 @@ public class SyncElementS2CPacket {
     private final int level;
     private final int xp;
     private final int souls;
+    private final String subClass;
 
     public SyncElementS2CPacket(String elementId, int level, int xp, int souls) {
+        this(elementId, level, xp, souls, "");
+    }
+
+    public SyncElementS2CPacket(String elementId, int level, int xp, int souls, String subClass) {
         this.elementId = elementId;
         this.level = level;
         this.xp = xp;
         this.souls = souls;
+        this.subClass = subClass;
     }
 
     // Keep backwards-compatible constructor
     public SyncElementS2CPacket(String elementId) {
-        this(elementId, 1, 0, 0);
+        this(elementId, 1, 0, 0, "");
     }
 
     public SyncElementS2CPacket(FriendlyByteBuf buf) {
@@ -31,6 +37,7 @@ public class SyncElementS2CPacket {
         this.level = buf.readInt();
         this.xp = buf.readInt();
         this.souls = buf.readInt();
+        this.subClass = buf.readUtf();
     }
 
     public void toBytes(FriendlyByteBuf buf) {
@@ -38,6 +45,7 @@ public class SyncElementS2CPacket {
         buf.writeInt(level);
         buf.writeInt(xp);
         buf.writeInt(souls);
+        buf.writeUtf(subClass);
     }
 
     public boolean handle(Supplier<NetworkEvent.Context> supplier) {
@@ -47,7 +55,7 @@ public class SyncElementS2CPacket {
                 Minecraft.getInstance().player.getCapability(PlayerElementProvider.PLAYER_ELEMENT)
                         .ifPresent(data -> {
                             data.setElement(ElementType.fromId(elementId));
-                            // Restore level data without resetting
+                            data.setSubClass(subClass);
                             data.addXp(0); // just init
                         });
             }
