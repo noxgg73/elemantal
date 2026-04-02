@@ -393,10 +393,10 @@ public class UseElementPowerC2SPacket {
                         level.playSound(null, player.blockPosition(), SoundEvents.TRIDENT_THUNDER, SoundSource.PLAYERS, 1.0f, 1.0f);
                     }
                     case ROYAL -> {
-                        // ROYAL CASTLE: build a castle 30 blocks in front
+                        // ROYAL CASTLE: build a grand castle 60 blocks in front
                         Vec3 flatLook = new Vec3(look.x, 0, look.z).normalize();
                         BlockPos castleCenter = player.blockPosition().offset(
-                                (int)(flatLook.x * 30), 0, (int)(flatLook.z * 30));
+                                (int)(flatLook.x * 60), 0, (int)(flatLook.z * 60));
 
                         // Find ground level at castle position
                         int groundY = castleCenter.getY();
@@ -422,10 +422,10 @@ public class UseElementPowerC2SPacket {
                                 50, 1, 2, 1, 0.3);
 
                         // Golden particle trail to castle
-                        for (int t = 0; t < 30; t++) {
-                            double progress = t / 30.0;
-                            double px = player.getX() + flatLook.x * 30 * progress;
-                            double pz = player.getZ() + flatLook.z * 30 * progress;
+                        for (int t = 0; t < 60; t++) {
+                            double progress = t / 60.0;
+                            double px = player.getX() + flatLook.x * 60 * progress;
+                            double pz = player.getZ() + flatLook.z * 60 * progress;
                             level.sendParticles(goldDust, px, groundY + 2, pz, 3, 0.2, 0.5, 0.2, 0.02);
                         }
 

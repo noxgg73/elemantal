@@ -36,13 +36,13 @@ public class CastleGenerator {
      * The castle faces the direction the player is looking.
      */
     public static void generate(ServerLevel level, BlockPos center, int groundY) {
-        // Castle dimensions
-        int wallSize = 15; // half-width of outer walls
-        int wallHeight = 8;
-        int towerHeight = 14;
-        int towerRadius = 3;
-        int keepSize = 7; // half-width of central keep
-        int keepHeight = 12;
+        // Castle dimensions (grand royal castle)
+        int wallSize = 30; // half-width of outer walls
+        int wallHeight = 16;
+        int towerHeight = 28;
+        int towerRadius = 6;
+        int keepSize = 14; // half-width of central keep
+        int keepHeight = 24;
 
         // Clear and flatten area
         flattenArea(level, center, wallSize + 5, groundY);
@@ -78,7 +78,7 @@ public class CastleGenerator {
                 // Set ground level
                 level.setBlock(center.offset(x, 0, z).atY(groundY), STONE_BRICK, 2);
                 // Clear above
-                for (int y = 1; y <= 20; y++) {
+                for (int y = 1; y <= 40; y++) {
                     level.setBlock(center.offset(x, 0, z).atY(groundY + y), AIR, 2);
                 }
             }
@@ -186,32 +186,36 @@ public class CastleGenerator {
     }
 
     private static void buildGate(ServerLevel level, BlockPos gateCenter, int wallHeight, int groundY) {
-        // Gate opening (3 wide, 4 tall)
-        for (int x = -1; x <= 1; x++) {
-            for (int y = 1; y <= 4; y++) {
+        // Gate opening (5 wide, 8 tall)
+        for (int x = -2; x <= 2; x++) {
+            for (int y = 1; y <= 8; y++) {
                 level.setBlock(gateCenter.offset(x, 0, 0).atY(groundY + y), AIR, 2);
             }
         }
 
         // Gate arch
-        level.setBlock(gateCenter.offset(-2, 0, 0).atY(groundY + 5), STONE_BRICK, 2);
-        level.setBlock(gateCenter.offset(-1, 0, 0).atY(groundY + 5), STONE_BRICK, 2);
-        level.setBlock(gateCenter.offset(0, 0, 0).atY(groundY + 5), STONE_BRICK, 2);
-        level.setBlock(gateCenter.offset(1, 0, 0).atY(groundY + 5), STONE_BRICK, 2);
-        level.setBlock(gateCenter.offset(2, 0, 0).atY(groundY + 5), STONE_BRICK, 2);
+        for (int x = -3; x <= 3; x++) {
+            level.setBlock(gateCenter.offset(x, 0, 0).atY(groundY + 9), STONE_BRICK, 2);
+            level.setBlock(gateCenter.offset(x, 0, 0).atY(groundY + 10), GOLD_BLOCK, 2);
+        }
 
         // Iron bars portcullis
-        for (int x = -1; x <= 1; x++) {
-            level.setBlock(gateCenter.offset(x, 0, 0).atY(groundY + 4), IRON_BARS, 2);
+        for (int x = -2; x <= 2; x++) {
+            level.setBlock(gateCenter.offset(x, 0, 0).atY(groundY + 7), IRON_BARS, 2);
+            level.setBlock(gateCenter.offset(x, 0, 0).atY(groundY + 8), IRON_BARS, 2);
         }
 
         // Gold accents on gate pillars
-        level.setBlock(gateCenter.offset(-2, 0, 0).atY(groundY + 3), GOLD_BLOCK, 2);
-        level.setBlock(gateCenter.offset(2, 0, 0).atY(groundY + 3), GOLD_BLOCK, 2);
+        for (int y = 1; y <= 8; y++) {
+            level.setBlock(gateCenter.offset(-3, 0, 0).atY(groundY + y), GOLD_BLOCK, 2);
+            level.setBlock(gateCenter.offset(3, 0, 0).atY(groundY + y), GOLD_BLOCK, 2);
+        }
 
         // Lanterns at gate
-        level.setBlock(gateCenter.offset(-2, 0, 1).atY(groundY + 4), LANTERN, 2);
-        level.setBlock(gateCenter.offset(2, 0, 1).atY(groundY + 4), LANTERN, 2);
+        level.setBlock(gateCenter.offset(-3, 0, 1).atY(groundY + 7), LANTERN, 2);
+        level.setBlock(gateCenter.offset(3, 0, 1).atY(groundY + 7), LANTERN, 2);
+        level.setBlock(gateCenter.offset(-3, 0, -1).atY(groundY + 7), LANTERN, 2);
+        level.setBlock(gateCenter.offset(3, 0, -1).atY(groundY + 7), LANTERN, 2);
     }
 
     private static void buildKeep(ServerLevel level, BlockPos center, int size, int height, int groundY) {
@@ -224,8 +228,8 @@ public class CastleGenerator {
                         level.setBlock(center.offset(x, 0, z).atY(groundY + y), kBlock, 2);
                     } else {
                         // Interior
-                        if (y == 1 || y == 6) {
-                            // Floors
+                        if (y == 1 || y == 8 || y == 15) {
+                            // Floors (ground, 2nd, 3rd level)
                             level.setBlock(center.offset(x, 0, z).atY(groundY + y), OAK_PLANKS, 2);
                         } else {
                             level.setBlock(center.offset(x, 0, z).atY(groundY + y), AIR, 2);
@@ -261,15 +265,17 @@ public class CastleGenerator {
             }
         }
 
-        // Keep entrance (south side)
-        for (int y = 1; y <= 3; y++) {
-            for (int x = -1; x <= 1; x++) {
+        // Keep entrance (south side, bigger)
+        for (int y = 1; y <= 6; y++) {
+            for (int x = -2; x <= 2; x++) {
                 level.setBlock(center.offset(x, 0, size).atY(groundY + y), AIR, 2);
             }
         }
 
-        // Royal banner above keep entrance
-        level.setBlock(center.offset(0, 0, size).atY(groundY + 4), BANNER, 2);
+        // Royal banners above keep entrance
+        level.setBlock(center.offset(0, 0, size).atY(groundY + 7), BANNER, 2);
+        level.setBlock(center.offset(-3, 0, size).atY(groundY + 7), BANNER, 2);
+        level.setBlock(center.offset(3, 0, size).atY(groundY + 7), BANNER, 2);
 
         // Gold trim on keep
         for (int i = -size; i <= size; i++) {
@@ -282,61 +288,93 @@ public class CastleGenerator {
 
     private static void buildCourtyard(ServerLevel level, BlockPos center, int wallSize, int groundY) {
         // Red carpet path from gate to keep
-        for (int z = 7; z <= wallSize; z++) {
+        for (int z = 14; z <= wallSize; z++) {
             level.setBlock(center.offset(0, 0, z).atY(groundY + 1), RED_CARPET, 2);
             level.setBlock(center.offset(-1, 0, z).atY(groundY + 1), RED_CARPET, 2);
             level.setBlock(center.offset(1, 0, z).atY(groundY + 1), RED_CARPET, 2);
         }
 
         // Lantern posts along the path
-        for (int z = 8; z <= wallSize - 2; z += 4) {
-            level.setBlock(center.offset(-3, 0, z).atY(groundY + 1), Blocks.COBBLESTONE_WALL.defaultBlockState(), 2);
-            level.setBlock(center.offset(-3, 0, z).atY(groundY + 2), Blocks.COBBLESTONE_WALL.defaultBlockState(), 2);
-            level.setBlock(center.offset(-3, 0, z).atY(groundY + 3), LANTERN, 2);
+        for (int z = 16; z <= wallSize - 2; z += 4) {
+            level.setBlock(center.offset(-5, 0, z).atY(groundY + 1), Blocks.COBBLESTONE_WALL.defaultBlockState(), 2);
+            level.setBlock(center.offset(-5, 0, z).atY(groundY + 2), Blocks.COBBLESTONE_WALL.defaultBlockState(), 2);
+            level.setBlock(center.offset(-5, 0, z).atY(groundY + 3), LANTERN, 2);
 
-            level.setBlock(center.offset(3, 0, z).atY(groundY + 1), Blocks.COBBLESTONE_WALL.defaultBlockState(), 2);
-            level.setBlock(center.offset(3, 0, z).atY(groundY + 2), Blocks.COBBLESTONE_WALL.defaultBlockState(), 2);
-            level.setBlock(center.offset(3, 0, z).atY(groundY + 3), LANTERN, 2);
+            level.setBlock(center.offset(5, 0, z).atY(groundY + 1), Blocks.COBBLESTONE_WALL.defaultBlockState(), 2);
+            level.setBlock(center.offset(5, 0, z).atY(groundY + 2), Blocks.COBBLESTONE_WALL.defaultBlockState(), 2);
+            level.setBlock(center.offset(5, 0, z).atY(groundY + 3), LANTERN, 2);
         }
 
-        // Water fountain in courtyard
-        int fz = wallSize - 6;
-        level.setBlock(center.offset(8, 0, fz).atY(groundY + 1), Blocks.STONE_BRICK_WALL.defaultBlockState(), 2);
-        level.setBlock(center.offset(8, 0, fz).atY(groundY + 2), Blocks.WATER.defaultBlockState(), 2);
-        for (int fx = 7; fx <= 9; fx++) {
-            for (int ffz = fz - 1; ffz <= fz + 1; ffz++) {
+        // Water fountain in courtyard (left side)
+        int fz = wallSize - 10;
+        level.setBlock(center.offset(16, 0, fz).atY(groundY + 1), Blocks.STONE_BRICK_WALL.defaultBlockState(), 2);
+        level.setBlock(center.offset(16, 0, fz).atY(groundY + 2), Blocks.WATER.defaultBlockState(), 2);
+        for (int fx = 14; fx <= 18; fx++) {
+            for (int ffz = fz - 2; ffz <= fz + 2; ffz++) {
+                level.setBlock(center.offset(fx, 0, ffz).atY(groundY + 1), Blocks.STONE_BRICK_SLAB.defaultBlockState(), 2);
+            }
+        }
+
+        // Water fountain in courtyard (right side)
+        level.setBlock(center.offset(-16, 0, fz).atY(groundY + 1), Blocks.STONE_BRICK_WALL.defaultBlockState(), 2);
+        level.setBlock(center.offset(-16, 0, fz).atY(groundY + 2), Blocks.WATER.defaultBlockState(), 2);
+        for (int fx = -18; fx <= -14; fx++) {
+            for (int ffz = fz - 2; ffz <= fz + 2; ffz++) {
                 level.setBlock(center.offset(fx, 0, ffz).atY(groundY + 1), Blocks.STONE_BRICK_SLAB.defaultBlockState(), 2);
             }
         }
     }
 
     private static void buildThroneRoom(ServerLevel level, BlockPos center, int keepSize, int groundY) {
-        // Throne (stairs facing south)
-        level.setBlock(center.offset(0, 0, -keepSize + 2).atY(groundY + 2), Blocks.QUARTZ_STAIRS.defaultBlockState(), 2);
-        level.setBlock(center.offset(0, 0, -keepSize + 2).atY(groundY + 3), Blocks.QUARTZ_SLAB.defaultBlockState(), 2);
-
-        // Gold armrests
-        level.setBlock(center.offset(-1, 0, -keepSize + 2).atY(groundY + 2), GOLD_BLOCK, 2);
-        level.setBlock(center.offset(1, 0, -keepSize + 2).atY(groundY + 2), GOLD_BLOCK, 2);
-
-        // Throne back
-        level.setBlock(center.offset(0, 0, -keepSize + 1).atY(groundY + 2), Blocks.QUARTZ_BLOCK.defaultBlockState(), 2);
-        level.setBlock(center.offset(0, 0, -keepSize + 1).atY(groundY + 3), Blocks.QUARTZ_BLOCK.defaultBlockState(), 2);
-        level.setBlock(center.offset(0, 0, -keepSize + 1).atY(groundY + 4), GOLD_BLOCK, 2);
-
-        // Red carpet to throne
-        for (int z = -keepSize + 3; z <= keepSize; z++) {
-            level.setBlock(center.offset(0, 0, z).atY(groundY + 2), RED_CARPET, 2);
+        // Elevated throne platform (3 steps)
+        for (int step = 0; step < 3; step++) {
+            int platSize = 4 - step;
+            for (int x = -platSize; x <= platSize; x++) {
+                for (int z = -keepSize + 2; z <= -keepSize + 2 + platSize; z++) {
+                    level.setBlock(center.offset(x, 0, z).atY(groundY + 2 + step), Blocks.QUARTZ_BLOCK.defaultBlockState(), 2);
+                }
+            }
         }
 
-        // Chests on sides
-        level.setBlock(center.offset(-keepSize + 2, 0, -keepSize + 2).atY(groundY + 2), CHEST, 2);
-        level.setBlock(center.offset(keepSize - 2, 0, -keepSize + 2).atY(groundY + 2), CHEST, 2);
+        // Throne (stairs facing south)
+        level.setBlock(center.offset(0, 0, -keepSize + 3).atY(groundY + 5), Blocks.QUARTZ_STAIRS.defaultBlockState(), 2);
+        level.setBlock(center.offset(0, 0, -keepSize + 3).atY(groundY + 6), Blocks.QUARTZ_SLAB.defaultBlockState(), 2);
 
-        // Lanterns in throne room
-        level.setBlock(center.offset(-3, 0, -keepSize + 3).atY(groundY + 4), LANTERN, 2);
-        level.setBlock(center.offset(3, 0, -keepSize + 3).atY(groundY + 4), LANTERN, 2);
-        level.setBlock(center.offset(-3, 0, 0).atY(groundY + 4), LANTERN, 2);
-        level.setBlock(center.offset(3, 0, 0).atY(groundY + 4), LANTERN, 2);
+        // Gold armrests
+        level.setBlock(center.offset(-1, 0, -keepSize + 3).atY(groundY + 5), GOLD_BLOCK, 2);
+        level.setBlock(center.offset(1, 0, -keepSize + 3).atY(groundY + 5), GOLD_BLOCK, 2);
+
+        // Throne back (taller)
+        for (int y = 5; y <= 8; y++) {
+            level.setBlock(center.offset(0, 0, -keepSize + 2).atY(groundY + y), Blocks.QUARTZ_BLOCK.defaultBlockState(), 2);
+        }
+        level.setBlock(center.offset(0, 0, -keepSize + 2).atY(groundY + 9), GOLD_BLOCK, 2);
+
+        // Red carpet to throne (wide)
+        for (int z = -keepSize + 5; z <= keepSize; z++) {
+            level.setBlock(center.offset(0, 0, z).atY(groundY + 2), RED_CARPET, 2);
+            level.setBlock(center.offset(-1, 0, z).atY(groundY + 2), RED_CARPET, 2);
+            level.setBlock(center.offset(1, 0, z).atY(groundY + 2), RED_CARPET, 2);
+        }
+
+        // Chests on sides (multiple)
+        for (int i = 0; i < 3; i++) {
+            level.setBlock(center.offset(-keepSize + 2 + i * 2, 0, -keepSize + 2).atY(groundY + 2), CHEST, 2);
+            level.setBlock(center.offset(keepSize - 2 - i * 2, 0, -keepSize + 2).atY(groundY + 2), CHEST, 2);
+        }
+
+        // Lanterns in throne room (more of them)
+        for (int z = -keepSize + 3; z <= keepSize - 3; z += 5) {
+            level.setBlock(center.offset(-6, 0, z).atY(groundY + 4), LANTERN, 2);
+            level.setBlock(center.offset(6, 0, z).atY(groundY + 4), LANTERN, 2);
+        }
+
+        // Gold pillar columns
+        for (int z = -keepSize + 4; z <= keepSize - 2; z += 6) {
+            for (int y = 2; y <= 5; y++) {
+                level.setBlock(center.offset(-5, 0, z).atY(groundY + y), GOLD_BLOCK, 2);
+                level.setBlock(center.offset(5, 0, z).atY(groundY + y), GOLD_BLOCK, 2);
+            }
+        }
     }
 }
