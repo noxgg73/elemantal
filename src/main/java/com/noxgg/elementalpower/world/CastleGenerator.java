@@ -2,8 +2,19 @@ package com.noxgg.elementalpower.world;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.MobSpawnType;
+import net.minecraft.world.entity.npc.Villager;
+import net.minecraft.world.entity.npc.VillagerProfession;
+import net.minecraft.world.entity.npc.VillagerData;
+import net.minecraft.world.entity.npc.VillagerType;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.properties.BedPart;
+import net.minecraft.world.level.block.BedBlock;
+import net.minecraft.world.level.block.StairBlock;
+import net.minecraft.world.level.block.state.properties.Half;
+import net.minecraft.core.Direction;
 
 /**
  * Generates a medieval castle structure at a given position.
@@ -70,6 +81,12 @@ public class CastleGenerator {
 
         // 7. Throne room inside keep
         buildThroneRoom(level, center, keepSize, groundY);
+
+        // 8. Royal private chamber (2nd floor of keep)
+        buildRoyalChamber(level, center, keepSize, groundY);
+
+        // 9. Spawn villagers in courtyard
+        spawnVillagers(level, center, wallSize, groundY);
     }
 
     private static void flattenArea(ServerLevel level, BlockPos center, int radius, int groundY) {
@@ -374,6 +391,190 @@ public class CastleGenerator {
             for (int y = 2; y <= 5; y++) {
                 level.setBlock(center.offset(-5, 0, z).atY(groundY + y), GOLD_BLOCK, 2);
                 level.setBlock(center.offset(5, 0, z).atY(groundY + y), GOLD_BLOCK, 2);
+            }
+        }
+    }
+
+    /**
+     * Build the royal private chamber on the 2nd floor of the keep.
+     * Contains: TV + sofa, luxury bed, desk with computers.
+     * 2nd floor is at groundY + 8 (floor), interior from y=9 to y=14.
+     */
+    private static void buildRoyalChamber(ServerLevel level, BlockPos center, int keepSize, int groundY) {
+        int floorY = groundY + 8; // 2nd floor
+        int interior = keepSize - 1; // inside wall boundary
+
+        // === FLOOR: luxury carpet (blue + light blue pattern) ===
+        for (int x = -interior; x <= interior; x++) {
+            for (int z = -interior; z <= interior; z++) {
+                if ((Math.abs(x) + Math.abs(z)) % 2 == 0) {
+                    level.setBlock(center.offset(x, 0, z).atY(floorY + 1), Blocks.BLUE_CARPET.defaultBlockState(), 2);
+                } else {
+                    level.setBlock(center.offset(x, 0, z).atY(floorY + 1), Blocks.LIGHT_BLUE_CARPET.defaultBlockState(), 2);
+                }
+            }
+        }
+
+        // === STAIRCASE: access from 1st floor ===
+        for (int y = 2; y <= 7; y++) {
+            level.setBlock(center.offset(interior - 1, 0, interior - y).atY(groundY + y + 1), OAK_STAIRS, 2);
+            // Clear air above stairs
+            level.setBlock(center.offset(interior - 1, 0, interior - y).atY(groundY + y + 2), AIR, 2);
+            level.setBlock(center.offset(interior - 1, 0, interior - y).atY(groundY + y + 3), AIR, 2);
+        }
+        // Opening in 2nd floor for staircase
+        for (int z = interior - 8; z <= interior - 2; z++) {
+            level.setBlock(center.offset(interior - 1, 0, z).atY(floorY), AIR, 2);
+            level.setBlock(center.offset(interior - 2, 0, z).atY(floorY), AIR, 2);
+        }
+
+        // === TV AREA (north wall) ===
+        // TV screen: black concrete with sea lantern "screen"
+        int tvZ = -interior + 1;
+        // TV stand (dark oak slab)
+        for (int x = -3; x <= 3; x++) {
+            level.setBlock(center.offset(x, 0, tvZ).atY(floorY + 1), Blocks.DARK_OAK_SLAB.defaultBlockState(), 2);
+        }
+        // TV screen (sea lantern + black concrete frame)
+        for (int x = -2; x <= 2; x++) {
+            level.setBlock(center.offset(x, 0, tvZ).atY(floorY + 2), Blocks.SEA_LANTERN.defaultBlockState(), 2);
+            level.setBlock(center.offset(x, 0, tvZ).atY(floorY + 3), Blocks.SEA_LANTERN.defaultBlockState(), 2);
+        }
+        // TV frame
+        for (int x = -3; x <= 3; x++) {
+            level.setBlock(center.offset(x, 0, tvZ).atY(floorY + 4), Blocks.BLACK_CONCRETE.defaultBlockState(), 2);
+        }
+        level.setBlock(center.offset(-3, 0, tvZ).atY(floorY + 2), Blocks.BLACK_CONCRETE.defaultBlockState(), 2);
+        level.setBlock(center.offset(-3, 0, tvZ).atY(floorY + 3), Blocks.BLACK_CONCRETE.defaultBlockState(), 2);
+        level.setBlock(center.offset(3, 0, tvZ).atY(floorY + 2), Blocks.BLACK_CONCRETE.defaultBlockState(), 2);
+        level.setBlock(center.offset(3, 0, tvZ).atY(floorY + 3), Blocks.BLACK_CONCRETE.defaultBlockState(), 2);
+
+        // SOFA facing TV (quartz stairs facing north)
+        int sofaZ = tvZ + 4;
+        for (int x = -3; x <= 3; x++) {
+            level.setBlock(center.offset(x, 0, sofaZ).atY(floorY + 1),
+                    Blocks.QUARTZ_STAIRS.defaultBlockState().setValue(StairBlock.FACING, Direction.NORTH), 2);
+        }
+        // Sofa armrests
+        level.setBlock(center.offset(-4, 0, sofaZ).atY(floorY + 1), Blocks.QUARTZ_SLAB.defaultBlockState(), 2);
+        level.setBlock(center.offset(-4, 0, sofaZ).atY(floorY + 2), Blocks.QUARTZ_SLAB.defaultBlockState(), 2);
+        level.setBlock(center.offset(4, 0, sofaZ).atY(floorY + 1), Blocks.QUARTZ_SLAB.defaultBlockState(), 2);
+        level.setBlock(center.offset(4, 0, sofaZ).atY(floorY + 2), Blocks.QUARTZ_SLAB.defaultBlockState(), 2);
+
+        // === LUXURY BED (east side) ===
+        int bedX = interior - 3;
+        int bedZ = -2;
+        // Bed frame (gold blocks under bed)
+        level.setBlock(center.offset(bedX, 0, bedZ).atY(floorY + 1), GOLD_BLOCK, 2);
+        level.setBlock(center.offset(bedX, 0, bedZ + 1).atY(floorY + 1), GOLD_BLOCK, 2);
+        // Red bed on top
+        level.setBlock(center.offset(bedX, 0, bedZ).atY(floorY + 2),
+                Blocks.RED_BED.defaultBlockState().setValue(BedBlock.PART, BedPart.HEAD).setValue(BedBlock.FACING, Direction.SOUTH), 2);
+        level.setBlock(center.offset(bedX, 0, bedZ + 1).atY(floorY + 2),
+                Blocks.RED_BED.defaultBlockState().setValue(BedBlock.PART, BedPart.FOOT).setValue(BedBlock.FACING, Direction.SOUTH), 2);
+        // Nightstands
+        level.setBlock(center.offset(bedX - 1, 0, bedZ).atY(floorY + 1), Blocks.DARK_OAK_SLAB.defaultBlockState(), 2);
+        level.setBlock(center.offset(bedX + 1, 0, bedZ).atY(floorY + 1), Blocks.DARK_OAK_SLAB.defaultBlockState(), 2);
+        level.setBlock(center.offset(bedX - 1, 0, bedZ).atY(floorY + 2), LANTERN, 2);
+        level.setBlock(center.offset(bedX + 1, 0, bedZ).atY(floorY + 2), LANTERN, 2);
+        // Canopy (gold blocks above bed)
+        for (int x = bedX - 1; x <= bedX + 1; x++) {
+            for (int z = bedZ; z <= bedZ + 1; z++) {
+                level.setBlock(center.offset(x, 0, z).atY(floorY + 5), GOLD_BLOCK, 2);
+            }
+        }
+        // Canopy pillars
+        level.setBlock(center.offset(bedX - 1, 0, bedZ).atY(floorY + 3), Blocks.CHAIN.defaultBlockState(), 2);
+        level.setBlock(center.offset(bedX - 1, 0, bedZ).atY(floorY + 4), Blocks.CHAIN.defaultBlockState(), 2);
+        level.setBlock(center.offset(bedX + 1, 0, bedZ).atY(floorY + 3), Blocks.CHAIN.defaultBlockState(), 2);
+        level.setBlock(center.offset(bedX + 1, 0, bedZ).atY(floorY + 4), Blocks.CHAIN.defaultBlockState(), 2);
+        level.setBlock(center.offset(bedX - 1, 0, bedZ + 1).atY(floorY + 3), Blocks.CHAIN.defaultBlockState(), 2);
+        level.setBlock(center.offset(bedX - 1, 0, bedZ + 1).atY(floorY + 4), Blocks.CHAIN.defaultBlockState(), 2);
+        level.setBlock(center.offset(bedX + 1, 0, bedZ + 1).atY(floorY + 3), Blocks.CHAIN.defaultBlockState(), 2);
+        level.setBlock(center.offset(bedX + 1, 0, bedZ + 1).atY(floorY + 4), Blocks.CHAIN.defaultBlockState(), 2);
+
+        // === DESK WITH COMPUTERS (west side) ===
+        int deskX = -interior + 2;
+        int deskZ = 2;
+        // Desk surface (dark oak slabs on fence posts)
+        for (int z = deskZ; z <= deskZ + 4; z++) {
+            // Fence legs
+            level.setBlock(center.offset(deskX, 0, z).atY(floorY + 1), Blocks.DARK_OAK_FENCE.defaultBlockState(), 2);
+            level.setBlock(center.offset(deskX + 1, 0, z).atY(floorY + 1), Blocks.DARK_OAK_FENCE.defaultBlockState(), 2);
+            // Desk surface
+            level.setBlock(center.offset(deskX, 0, z).atY(floorY + 2), Blocks.DARK_OAK_SLAB.defaultBlockState(), 2);
+            level.setBlock(center.offset(deskX + 1, 0, z).atY(floorY + 2), Blocks.DARK_OAK_SLAB.defaultBlockState(), 2);
+        }
+        // Computer screens (sea lantern monitors on the desk)
+        level.setBlock(center.offset(deskX, 0, deskZ).atY(floorY + 3), Blocks.SEA_LANTERN.defaultBlockState(), 2);
+        level.setBlock(center.offset(deskX, 0, deskZ + 1).atY(floorY + 3), Blocks.SEA_LANTERN.defaultBlockState(), 2);
+        level.setBlock(center.offset(deskX + 1, 0, deskZ + 2).atY(floorY + 3), Blocks.SEA_LANTERN.defaultBlockState(), 2);
+        level.setBlock(center.offset(deskX + 1, 0, deskZ + 3).atY(floorY + 3), Blocks.SEA_LANTERN.defaultBlockState(), 2);
+        // Monitor frames (black concrete on top)
+        level.setBlock(center.offset(deskX, 0, deskZ).atY(floorY + 4), Blocks.BLACK_CONCRETE.defaultBlockState(), 2);
+        level.setBlock(center.offset(deskX, 0, deskZ + 1).atY(floorY + 4), Blocks.BLACK_CONCRETE.defaultBlockState(), 2);
+        level.setBlock(center.offset(deskX + 1, 0, deskZ + 2).atY(floorY + 4), Blocks.BLACK_CONCRETE.defaultBlockState(), 2);
+        level.setBlock(center.offset(deskX + 1, 0, deskZ + 3).atY(floorY + 4), Blocks.BLACK_CONCRETE.defaultBlockState(), 2);
+        // Keyboards (stone buttons in front of screens)
+        level.setBlock(center.offset(deskX + 1, 0, deskZ).atY(floorY + 3), Blocks.STONE_BUTTON.defaultBlockState(), 2);
+        level.setBlock(center.offset(deskX + 1, 0, deskZ + 1).atY(floorY + 3), Blocks.STONE_BUTTON.defaultBlockState(), 2);
+        level.setBlock(center.offset(deskX, 0, deskZ + 2).atY(floorY + 3), Blocks.STONE_BUTTON.defaultBlockState(), 2);
+        level.setBlock(center.offset(deskX, 0, deskZ + 3).atY(floorY + 3), Blocks.STONE_BUTTON.defaultBlockState(), 2);
+        // Chair at desk (stairs facing desk)
+        level.setBlock(center.offset(deskX + 3, 0, deskZ + 1).atY(floorY + 1),
+                Blocks.DARK_OAK_STAIRS.defaultBlockState().setValue(StairBlock.FACING, Direction.WEST), 2);
+        level.setBlock(center.offset(deskX + 3, 0, deskZ + 3).atY(floorY + 1),
+                Blocks.DARK_OAK_STAIRS.defaultBlockState().setValue(StairBlock.FACING, Direction.WEST), 2);
+        // Redstone lamp (desk lamp)
+        level.setBlock(center.offset(deskX, 0, deskZ + 4).atY(floorY + 3), Blocks.REDSTONE_LAMP.defaultBlockState(), 2);
+        level.setBlock(center.offset(deskX, 0, deskZ + 4).atY(floorY + 4), Blocks.REDSTONE_BLOCK.defaultBlockState(), 2);
+
+        // === ROOM LIGHTING ===
+        level.setBlock(center.offset(0, 0, -interior + 3).atY(floorY + 6), Blocks.GLOWSTONE.defaultBlockState(), 2);
+        level.setBlock(center.offset(-5, 0, 0).atY(floorY + 6), LANTERN, 2);
+        level.setBlock(center.offset(5, 0, 0).atY(floorY + 6), LANTERN, 2);
+        level.setBlock(center.offset(0, 0, interior - 3).atY(floorY + 6), LANTERN, 2);
+    }
+
+    /**
+     * Spawn villagers in the courtyard of the castle.
+     */
+    private static void spawnVillagers(ServerLevel level, BlockPos center, int wallSize, int groundY) {
+        VillagerProfession[] professions = {
+                VillagerProfession.ARMORER,
+                VillagerProfession.WEAPONSMITH,
+                VillagerProfession.LIBRARIAN,
+                VillagerProfession.CLERIC,
+                VillagerProfession.FARMER,
+                VillagerProfession.MASON,
+                VillagerProfession.TOOLSMITH,
+                VillagerProfession.CARTOGRAPHER
+        };
+
+        // Spawn villagers along the courtyard paths
+        int[][] positions = {
+                {-10, wallSize - 5}, {10, wallSize - 5},
+                {-8, wallSize - 12}, {8, wallSize - 12},
+                {-15, wallSize - 8}, {15, wallSize - 8},
+                {-12, wallSize - 15}, {12, wallSize - 15}
+        };
+
+        for (int i = 0; i < positions.length && i < professions.length; i++) {
+            Villager villager = EntityType.VILLAGER.create(level);
+            if (villager != null) {
+                int vx = positions[i][0];
+                int vz = positions[i][1];
+                villager.moveTo(
+                        center.getX() + vx + 0.5,
+                        groundY + 1,
+                        center.getZ() + vz + 0.5,
+                        level.random.nextFloat() * 360, 0);
+                villager.setVillagerData(villager.getVillagerData()
+                        .setProfession(professions[i])
+                        .setLevel(2 + level.random.nextInt(3))
+                        .setType(VillagerType.PLAINS));
+                villager.setPersistenceRequired();
+                level.addFreshEntity(villager);
             }
         }
     }
