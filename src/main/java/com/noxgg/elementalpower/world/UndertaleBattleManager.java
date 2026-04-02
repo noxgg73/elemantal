@@ -16,6 +16,7 @@ import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.player.Player;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -28,11 +29,13 @@ public class UndertaleBattleManager {
     public static class ActiveBattle {
         public final ServerPlayer player;
         public final LivingEntity target;
+        public final boolean isPlayerBattle;
         public int spareCount; // how many times player has tried to spare
 
         public ActiveBattle(ServerPlayer player, LivingEntity target) {
             this.player = player;
             this.target = target;
+            this.isPlayerBattle = target instanceof Player;
             this.spareCount = 0;
         }
     }
@@ -42,7 +45,24 @@ public class UndertaleBattleManager {
     }
 
     /**
-     * Start a battle when an Undertale player hits a mob.
+     * Deal damage to a target, bypassing creative mode for players.
+     */
+    private static void dealDamage(LivingEntity target, float damage, ServerLevel level, ServerPlayer attacker) {
+        if (target instanceof ServerPlayer targetPlayer) {
+            // Bypass creative mode: directly reduce health
+            float newHealth = targetPlayer.getHealth() - damage;
+            targetPlayer.setHealth(Math.max(0, newHealth));
+            // Kill if health reaches 0
+            if (newHealth <= 0) {
+                targetPlayer.hurt(level.damageSources().playerAttack(attacker), Float.MAX_VALUE);
+            }
+        } else {
+            target.hurt(level.damageSources().playerAttack(attacker), damage);
+        }
+    }
+
+    /**
+     * Start a battle when an Undertale player hits a mob or player.
      */
     public static void startBattle(ServerPlayer player, LivingEntity target, boolean isFrisk) {
         UUID playerId = player.getUUID();
@@ -50,7 +70,10 @@ public class UndertaleBattleManager {
         // Don't start battle if already in one
         if (activeBattles.containsKey(playerId)) return;
 
-        // Freeze both player and mob during battle
+        // If target is a player already in a battle, don't start another
+        if (target instanceof ServerPlayer targetPlayer && isInBattle(targetPlayer.getUUID())) return;
+
+        // Freeze both player and target during battle
         target.setDeltaMovement(0, 0, 0);
         target.hurtMarked = true;
         if (target instanceof Mob mob) {
@@ -61,17 +84,31 @@ public class UndertaleBattleManager {
 
         player.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 6000, 127, false, false));
 
+        boolean isPlayerBattle = target instanceof Player;
         activeBattles.put(playerId, new ActiveBattle(player, target));
 
-        String mobName = target.getType().getDescription().getString();
+        String targetName;
+        if (target instanceof Player targetPlayer) {
+            targetName = targetPlayer.getGameProfile().getName();
+        } else {
+            targetName = target.getType().getDescription().getString();
+        }
 
         // Open battle screen on client
         ModMessages.sendToPlayer(new OpenUndertaleBattleS2CPacket(
-                target.getId(), mobName, target.getHealth(), target.getMaxHealth(), isFrisk), player);
+                target.getId(), targetName, target.getHealth(), target.getMaxHealth(), isFrisk, isPlayerBattle), player);
 
         // Battle start sound
         ServerLevel level = player.serverLevel();
         level.playSound(null, player.blockPosition(), SoundEvents.NOTE_BLOCK_BELL.get(), SoundSource.PLAYERS, 1.5f, 1.0f);
+
+        // Notify the target player
+        if (target instanceof ServerPlayer targetPlayer) {
+            targetPlayer.sendSystemMessage(Component.literal(">> ")
+                    .withStyle(ChatFormatting.RED, ChatFormatting.BOLD)
+                    .append(Component.literal(player.getGameProfile().getName() + " t'a defie en combat Undertale!")
+                            .withStyle(ChatFormatting.WHITE)));
+        }
     }
 
     /**
@@ -95,7 +132,7 @@ public class UndertaleBattleManager {
 
                 // Chara attack: deal heavy damage
                 float damage = 8.0f + data.getLevel() * 0.5f;
-                battle.target.hurt(level.damageSources().playerAttack(player), damage);
+                dealDamage(battle.target, damage, level, player);
 
                 // Slash particles
                 level.sendParticles(ParticleTypes.SWEEP_ATTACK,
@@ -112,7 +149,7 @@ public class UndertaleBattleManager {
                         .append(Component.literal("* ").withStyle(ChatFormatting.RED))
                         .append(Component.literal("Tu infliges " + (int)damage + " degats!").withStyle(ChatFormatting.WHITE)));
 
-                // Check if mob died
+                // Check if target died
                 if (!battle.target.isAlive() || battle.target.getHealth() <= 0) {
                     endBattle(player, "kill");
                     return;
@@ -126,20 +163,24 @@ public class UndertaleBattleManager {
             case "spare" -> {
                 battle.spareCount++;
 
-                // Need to spare multiple times depending on mob health ratio
+                // Need to spare multiple times depending on target health ratio
                 int neededSpares = (int) Math.ceil(battle.target.getMaxHealth() / 10.0);
                 neededSpares = Math.max(2, Math.min(neededSpares, 5));
 
                 if (battle.spareCount >= neededSpares) {
-                    // Mob is spared!
+                    // Target is spared!
                     endBattle(player, "spare");
                 } else {
-                    // Not yet, mob resists but is softening
+                    String targetName = battle.isPlayerBattle
+                            ? ((Player) battle.target).getGameProfile().getName()
+                            : battle.target.getType().getDescription().getString();
+
+                    // Not yet, target resists but is softening
                     String[] spareTexts = {
-                            "* " + battle.target.getType().getDescription().getString() + " hesite...",
-                            "* " + battle.target.getType().getDescription().getString() + " semble se calmer...",
-                            "* " + battle.target.getType().getDescription().getString() + " commence a te faire confiance...",
-                            "* " + battle.target.getType().getDescription().getString() + " baisse sa garde..."
+                            "* " + targetName + " hesite...",
+                            "* " + targetName + " semble se calmer...",
+                            "* " + targetName + " commence a te faire confiance...",
+                            "* " + targetName + " baisse sa garde..."
                     };
                     int textIndex = Math.min(battle.spareCount - 1, spareTexts.length - 1);
                     player.sendSystemMessage(Component.literal(spareTexts[textIndex])
@@ -193,13 +234,18 @@ public class UndertaleBattleManager {
                     level.playSound(null, player.blockPosition(),
                             SoundEvents.PLAYER_HURT, SoundSource.PLAYERS, 0.5f, 1.0f);
 
+                    String targetName = battle.isPlayerBattle
+                            ? ((Player) battle.target).getGameProfile().getName()
+                            : battle.target.getType().getDescription().getString();
+
                     // Refresh screen for next player turn
                     ModMessages.sendToPlayer(new OpenUndertaleBattleS2CPacket(
                             battle.target.getId(),
-                            battle.target.getType().getDescription().getString(),
+                            targetName,
                             battle.target.getHealth(),
                             battle.target.getMaxHealth(),
-                            data.isFrisk()), player);
+                            data.isFrisk(),
+                            battle.isPlayerBattle), player);
                 }
             }
 
@@ -212,12 +258,17 @@ public class UndertaleBattleManager {
                             .withStyle(ChatFormatting.RED));
                     mobCounterAttack(player, battle);
 
+                    String targetName = battle.isPlayerBattle
+                            ? ((Player) battle.target).getGameProfile().getName()
+                            : battle.target.getType().getDescription().getString();
+
                     ModMessages.sendToPlayer(new OpenUndertaleBattleS2CPacket(
                             battle.target.getId(),
-                            battle.target.getType().getDescription().getString(),
+                            targetName,
                             battle.target.getHealth(),
                             battle.target.getMaxHealth(),
-                            data.isFrisk()), player);
+                            data.isFrisk(),
+                            battle.isPlayerBattle), player);
                 }
             }
         }
@@ -226,7 +277,7 @@ public class UndertaleBattleManager {
     private static void mobCounterAttack(ServerPlayer player, ActiveBattle battle) {
         ServerLevel level = player.serverLevel();
 
-        // Mob deals damage based on its attack damage
+        // Target deals damage based on its attack damage
         float mobDamage = 2.0f + battle.target.getMaxHealth() * 0.1f;
         player.hurt(level.damageSources().mobAttack(battle.target), mobDamage);
 
@@ -238,9 +289,13 @@ public class UndertaleBattleManager {
         level.playSound(null, player.blockPosition(),
                 SoundEvents.PLAYER_HURT, SoundSource.PLAYERS, 1.0f, 1.0f);
 
+        String targetName = battle.isPlayerBattle
+                ? ((Player) battle.target).getGameProfile().getName()
+                : battle.target.getType().getDescription().getString();
+
         player.sendSystemMessage(Component.literal("")
                 .append(Component.literal("* ").withStyle(ChatFormatting.WHITE))
-                .append(Component.literal(battle.target.getType().getDescription().getString() + " attaque! ")
+                .append(Component.literal(targetName + " attaque! ")
                         .withStyle(ChatFormatting.RED))
                 .append(Component.literal("-" + (int)mobDamage + " PV").withStyle(ChatFormatting.DARK_RED)));
     }
@@ -255,11 +310,19 @@ public class UndertaleBattleManager {
         // Remove slowdown from player
         player.removeEffect(MobEffects.MOVEMENT_SLOWDOWN);
 
+        // Remove effects from target
+        battle.target.removeEffect(MobEffects.MOVEMENT_SLOWDOWN);
+        battle.target.removeEffect(MobEffects.WEAKNESS);
+
+        String targetName = battle.isPlayerBattle
+                ? ((Player) battle.target).getGameProfile().getName()
+                : battle.target.getType().getDescription().getString();
+
         switch (result) {
             case "kill" -> {
                 // XP reward
                 player.getCapability(PlayerElementProvider.PLAYER_ELEMENT).ifPresent(data -> {
-                    data.addXp(30);
+                    data.addXp(battle.isPlayerBattle ? 100 : 30); // More XP for PvP
                     com.noxgg.elementalpower.event.ElementEvents.syncToClient(player, data);
                 });
 
@@ -272,30 +335,46 @@ public class UndertaleBattleManager {
 
                 player.sendSystemMessage(Component.literal("")
                         .append(Component.literal("* ").withStyle(ChatFormatting.RED))
-                        .append(Component.literal("VICTOIRE. Tu as gagne 30 XP.").withStyle(ChatFormatting.YELLOW)));
+                        .append(Component.literal("VICTOIRE. Tu as gagne " + (battle.isPlayerBattle ? 100 : 30) + " XP.").withStyle(ChatFormatting.YELLOW)));
                 player.sendSystemMessage(Component.literal("")
                         .append(Component.literal("* ").withStyle(ChatFormatting.RED))
                         .append(Component.literal("Mais personne n'est venu...").withStyle(ChatFormatting.DARK_GRAY, ChatFormatting.ITALIC)));
+
+                // Notify killed player
+                if (battle.target instanceof ServerPlayer targetPlayer) {
+                    targetPlayer.sendSystemMessage(Component.literal(">> ")
+                            .withStyle(ChatFormatting.DARK_RED, ChatFormatting.BOLD)
+                            .append(Component.literal("Tu as ete vaincu par " + player.getGameProfile().getName() + " en combat Undertale!")
+                                    .withStyle(ChatFormatting.RED)));
+                }
             }
 
             case "spare" -> {
-                // Make mob friendly
-                if (battle.target instanceof Mob mob) {
-                    mob.setTarget(null);
-                    mob.removeEffect(MobEffects.MOVEMENT_SLOWDOWN);
-                    mob.removeEffect(MobEffects.WEAKNESS);
-                    mob.setPersistenceRequired();
-                    mob.addEffect(new MobEffectInstance(MobEffects.REGENERATION, 600, 2, false, true));
-                    mob.addEffect(new MobEffectInstance(MobEffects.GLOWING, 200, 0, false, false));
+                if (battle.isPlayerBattle) {
+                    // Spare a player: heal them and give both XP
+                    if (battle.target instanceof ServerPlayer targetPlayer) {
+                        targetPlayer.heal(targetPlayer.getMaxHealth());
+                        targetPlayer.sendSystemMessage(Component.literal("")
+                                .append(Component.literal("* ").withStyle(ChatFormatting.YELLOW))
+                                .append(Component.literal(player.getGameProfile().getName() + " t'a EPARGNE!")
+                                        .withStyle(ChatFormatting.GREEN, ChatFormatting.BOLD)));
+                    }
+                } else {
+                    // Make mob friendly
+                    if (battle.target instanceof Mob mob) {
+                        mob.setTarget(null);
+                        mob.setPersistenceRequired();
+                        mob.addEffect(new MobEffectInstance(MobEffects.REGENERATION, 600, 2, false, true));
+                        mob.addEffect(new MobEffectInstance(MobEffects.GLOWING, 200, 0, false, false));
 
-                    String mobName = mob.getType().getDescription().getString();
-                    mob.setCustomName(Component.literal("\u00A7a\u00A7l[Spare] \u00A72" + mobName));
-                    mob.setCustomNameVisible(true);
+                        mob.setCustomName(Component.literal("\u00A7a\u00A7l[Spare] \u00A72" + targetName));
+                        mob.setCustomNameVisible(true);
+                    }
                 }
 
                 // XP reward (more than kill)
                 player.getCapability(PlayerElementProvider.PLAYER_ELEMENT).ifPresent(data -> {
-                    data.addXp(50);
+                    data.addXp(battle.isPlayerBattle ? 150 : 50);
                     com.noxgg.elementalpower.event.ElementEvents.syncToClient(player, data);
                 });
 
@@ -316,23 +395,18 @@ public class UndertaleBattleManager {
 
                 player.sendSystemMessage(Component.literal("")
                         .append(Component.literal("* ").withStyle(ChatFormatting.YELLOW))
-                        .append(Component.literal("Tu as EPARGNE " + battle.target.getType().getDescription().getString() + "!")
+                        .append(Component.literal("Tu as EPARGNE " + targetName + "!")
                                 .withStyle(ChatFormatting.YELLOW, ChatFormatting.BOLD)));
                 player.sendSystemMessage(Component.literal("")
                         .append(Component.literal("* ").withStyle(ChatFormatting.YELLOW))
-                        .append(Component.literal("Tu gagnes 50 XP. L'ennemi est devenu ton ami.").withStyle(ChatFormatting.GREEN)));
+                        .append(Component.literal("Tu gagnes " + (battle.isPlayerBattle ? 150 : 50) + " XP.").withStyle(ChatFormatting.GREEN)));
             }
 
             case "playerdeath" -> {
-                battle.target.removeEffect(MobEffects.MOVEMENT_SLOWDOWN);
-                battle.target.removeEffect(MobEffects.WEAKNESS);
-                // Player died in combat, no message needed
+                // Player died in combat, no extra message needed
             }
 
             case "flee" -> {
-                battle.target.removeEffect(MobEffects.MOVEMENT_SLOWDOWN);
-                battle.target.removeEffect(MobEffects.WEAKNESS);
-
                 level.playSound(null, player.blockPosition(),
                         SoundEvents.ENDERMAN_TELEPORT, SoundSource.PLAYERS, 1.0f, 1.0f);
 
@@ -345,9 +419,9 @@ public class UndertaleBattleManager {
 
     public static void onPlayerLogout(UUID playerId) {
         ActiveBattle battle = activeBattles.remove(playerId);
-        if (battle != null && battle.target instanceof Mob mob) {
-            mob.removeEffect(MobEffects.MOVEMENT_SLOWDOWN);
-            mob.removeEffect(MobEffects.WEAKNESS);
+        if (battle != null) {
+            battle.target.removeEffect(MobEffects.MOVEMENT_SLOWDOWN);
+            battle.target.removeEffect(MobEffects.WEAKNESS);
         }
     }
 }

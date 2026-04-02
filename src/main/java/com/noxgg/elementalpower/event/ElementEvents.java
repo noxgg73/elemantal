@@ -84,7 +84,7 @@ public class ElementEvents {
     public static void onUndertaleAttack(net.minecraftforge.event.entity.player.AttackEntityEvent event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
         if (!(event.getTarget() instanceof LivingEntity target)) return;
-        if (target instanceof Player) return; // Don't battle players
+        // Players can be battled too (PvP Undertale combat)
 
         player.getCapability(PlayerElementProvider.PLAYER_ELEMENT).ifPresent(data -> {
             if (data.getElement() == ElementType.UNDERTALE) {

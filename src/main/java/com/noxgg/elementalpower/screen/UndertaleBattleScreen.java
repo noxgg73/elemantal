@@ -65,19 +65,24 @@ public class UndertaleBattleScreen extends Screen {
     // Sub-menu
     private String currentMenu = "main";
 
-    // Undertale HP system: 20 HP max, each hit = 3 damage, die at 0
-    private static final float UT_MAX_HP = 20;
+    // Undertale HP system: 20 HP max normally, 1111 HP for Chara in PvP
     private static final float UT_HIT_DAMAGE = 3;
-    private float utPlayerHp = UT_MAX_HP;
+    private final float utMaxHp;
+    private float utPlayerHp;
     private int totalDamageTaken = 0; // track total damage to send to server
+    private final boolean isPlayerBattle;
 
-    public UndertaleBattleScreen(int entityId, String mobName, float mobHealth, float mobMaxHealth, boolean isFrisk) {
+    public UndertaleBattleScreen(int entityId, String mobName, float mobHealth, float mobMaxHealth, boolean isFrisk, boolean isPlayerBattle) {
         super(Component.literal("Undertale Battle"));
         this.entityId = entityId;
         this.mobName = mobName;
         this.mobHealth = mobHealth;
         this.mobMaxHealth = mobMaxHealth;
         this.isFrisk = isFrisk;
+        this.isPlayerBattle = isPlayerBattle;
+        // Chara gets 1111 HP in PvP battles
+        this.utMaxHp = (isPlayerBattle && !isFrisk) ? 1111 : 20;
+        this.utPlayerHp = this.utMaxHp;
         this.dialogText = "* " + mobName + " se dresse devant toi!";
         this.dialogStart = System.currentTimeMillis();
     }
@@ -289,6 +294,7 @@ public class UndertaleBattleScreen extends Screen {
         if (lower.contains("spider") || lower.contains("araign")) return " \\ _ /\n  (o.o)  \n / \\_/ \\";
         if (lower.contains("enderman")) return "   ___\n  |. .|\n  |   |  \n  |   |\n  |___|";
         if (lower.contains("slime")) return "  _____\n /     \\\n| o   o |\n \\_____/";
+        if (isPlayerBattle) return "   ___\n  |^ ^|\n  |___|  \n  /| |\\\n / | | \\\n  JOUEUR";
         return "   ___\n  |? ?|\n  |___|  \n  /| |\\\n /   \\";
     }
 
@@ -304,9 +310,9 @@ public class UndertaleBattleScreen extends Screen {
         barX += 14;
         // Red background = damage taken, yellow = remaining HP
         g.fill(barX, y, barX + barW, y + 10, 0xFFCC0000);
-        float ratio = utPlayerHp / UT_MAX_HP;
+        float ratio = utPlayerHp / utMaxHp;
         g.fill(barX, y, barX + (int)(barW * Math.max(0, ratio)), y + 10, 0xFFFFFF00);
-        g.drawString(this.font, (int)utPlayerHp + " / " + (int)UT_MAX_HP, barX + barW + 5, y, 0xFFFFFF);
+        g.drawString(this.font, (int)utPlayerHp + " / " + (int)utMaxHp, barX + barW + 5, y, 0xFFFFFF);
     }
 
     private void renderBattleBox(GuiGraphics g, long now) {
