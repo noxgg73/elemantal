@@ -272,22 +272,25 @@ public class ShadowFormManager {
                 .withStyle(ChatFormatting.GRAY));
     }
 
+    private static net.minecraft.server.MinecraftServer serverRef = null;
+
+    public static void setServer(net.minecraft.server.MinecraftServer server) {
+        serverRef = server;
+    }
+
     /**
      * Called every server tick to update shadow forms.
      */
     public static void tick() {
+        if (serverRef == null) return;
+
         Iterator<Map.Entry<UUID, ShadowData>> it = shadowPlayers.entrySet().iterator();
         while (it.hasNext()) {
             Map.Entry<UUID, ShadowData> entry = it.next();
             ShadowData data = entry.getValue();
 
-            // Find the player
-            ServerPlayer player = null;
-            if (data.state == ShadowState.SHADOW && data.attachedMob != null) {
-                player = (ServerPlayer) data.attachedMob.level().getPlayerByUUID(entry.getKey());
-            } else if (data.state == ShadowState.MATERIALIZED && data.disguiseEntity != null) {
-                player = (ServerPlayer) data.disguiseEntity.level().getPlayerByUUID(entry.getKey());
-            }
+            // Find the player safely via server player list
+            ServerPlayer player = serverRef.getPlayerList().getPlayer(entry.getKey());
 
             if (player == null || player.isRemoved()) {
                 // Cleanup
@@ -303,8 +306,16 @@ public class ShadowFormManager {
             if (data.state == ShadowState.SHADOW) {
                 // === SHADOW: Follow the mob as its shadow ===
                 if (data.attachedMob == null || data.attachedMob.isRemoved() || !data.attachedMob.isAlive()) {
-                    // Mob died, exit shadow form
-                    exitShadowForm(player);
+                    // Mob died, safely exit shadow form
+                    player.removeEffect(MobEffects.INVISIBILITY);
+                    player.removeEffect(MobEffects.NIGHT_VISION);
+                    level.sendParticles(ParticleTypes.LARGE_SMOKE,
+                            player.getX(), player.getY() + 1, player.getZ(),
+                            20, 0.5, 0.5, 0.5, 0.05);
+                    level.playSound(null, player.blockPosition(),
+                            SoundEvents.PHANTOM_DEATH, SoundSource.PLAYERS, 1.0f, 0.5f);
+                    player.sendSystemMessage(Component.literal(">> L'hote est mort! Forme d'Ombre annulee.")
+                            .withStyle(ChatFormatting.GRAY));
                     it.remove();
                     continue;
                 }
@@ -323,7 +334,6 @@ public class ShadowFormManager {
 
                 // Shadow particles at mob's feet (dark flat particles)
                 if (player.tickCount % 3 == 0) {
-                    // Dark shadow under the mob
                     double mx = mob.getX();
                     double my = mob.getY() + 0.05;
                     double mz = mob.getZ();
@@ -337,7 +347,6 @@ public class ShadowFormManager {
                                 1, 0, 0, 0, 0);
                     }
 
-                    // Occasional dark wisps
                     if (player.tickCount % 15 == 0) {
                         level.sendParticles(ParticleTypes.SCULK_SOUL,
                                 mx, my + 0.1, mz,
@@ -372,7 +381,6 @@ public class ShadowFormManager {
                                 2, 0.2, 0.1, 0.2, 0.005);
                     }
 
-                    // Dark dripping effect
                     if (player.tickCount % 10 == 0) {
                         level.sendParticles(ParticleTypes.SCULK_SOUL,
                                 disguise.getX(), disguise.getY() + disguise.getBbHeight(), disguise.getZ(),
