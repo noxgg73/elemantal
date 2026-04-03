@@ -80,8 +80,8 @@ public class UndertaleBattleScreen extends Screen {
         this.mobMaxHealth = mobMaxHealth;
         this.isFrisk = isFrisk;
         this.isPlayerBattle = isPlayerBattle;
-        // Chara gets 1111 HP in PvP battles
-        this.utMaxHp = (isPlayerBattle && !isFrisk) ? 1111 : 20;
+        // Chara gets 1111 HP in PvP battles, 35 HP in normal battles (Frisk stays at 20)
+        this.utMaxHp = (isPlayerBattle && !isFrisk) ? 1111 : (!isFrisk ? 35 : 20);
         this.utPlayerHp = this.utMaxHp;
         this.dialogText = "* " + mobName + " se dresse devant toi!";
         this.dialogStart = System.currentTimeMillis();

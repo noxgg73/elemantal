@@ -130,8 +130,8 @@ public class UndertaleBattleManager {
                     return;
                 }
 
-                // Chara attack: deal heavy damage
-                float damage = 8.0f + data.getLevel() * 0.5f;
+                // Chara attack: deal very heavy damage (stronger than Frisk)
+                float damage = 15.0f + data.getLevel() * 0.8f;
                 dealDamage(battle.target, damage, level, player);
 
                 // Slash particles
