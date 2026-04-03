@@ -10,6 +10,7 @@ import com.noxgg.elementalpower.world.CarnivorousFlowerManager;
 import com.noxgg.elementalpower.world.DreamManager;
 import com.noxgg.elementalpower.world.SoulTsunamiManager;
 import com.noxgg.elementalpower.world.SpiritManager;
+import com.noxgg.elementalpower.world.RainbowChuzzleManager;
 import com.noxgg.elementalpower.world.DarkPrisonManager;
 import com.noxgg.elementalpower.world.PoisonDragonManager;
 import com.noxgg.elementalpower.world.TimeAbyssManager;
@@ -118,6 +119,7 @@ public class ModEvents {
             CarnivorousFlowerManager.tick();
             DreamManager.tick();
             SpiritManager.tick();
+            RainbowChuzzleManager.tick();
         }
     }
 

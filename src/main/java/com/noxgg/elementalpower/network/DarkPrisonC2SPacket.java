@@ -41,7 +41,8 @@ public class DarkPrisonC2SPacket {
                         && element != ElementType.ROYAL && element != ElementType.SPACE
                         && element != ElementType.DEMON && element != ElementType.NATURE
                         && element != ElementType.AIR && element != ElementType.TIME
-                        && element != ElementType.UNDERTALE && element != ElementType.EARTH) {
+                        && element != ElementType.UNDERTALE && element != ElementType.EARTH
+                        && element != ElementType.WATER) {
                     player.sendSystemMessage(Component.literal("Ce sort n'est pas disponible pour ta classe!")
                             .withStyle(ChatFormatting.RED));
                     return;
@@ -325,6 +326,87 @@ public class DarkPrisonC2SPacket {
                             .withStyle(ChatFormatting.DARK_RED, ChatFormatting.BOLD)
                             .append(net.minecraft.network.chat.Component.literal("Une vague d'ames deferle devant vous!")
                                     .withStyle(ChatFormatting.RED)));
+                    return;
+                }
+
+                // WATER: Rainbow Chuzzle - transform mob into rainbow chuzzle then explode
+                if (element == ElementType.WATER) {
+                    Vec3 waterEye = player.getEyePosition();
+                    Vec3 waterLook = player.getLookAngle();
+                    LivingEntity waterTarget = null;
+                    double waterClosest = 30.0;
+
+                    for (Entity entity : level.getEntities(player,
+                            player.getBoundingBox().inflate(30),
+                            e -> e instanceof LivingEntity && e != player)) {
+                        LivingEntity living = (LivingEntity) entity;
+                        Vec3 toEntity = living.position().add(0, living.getBbHeight() / 2, 0).subtract(waterEye);
+                        double dist = toEntity.length();
+                        if (dist > waterClosest) continue;
+                        Vec3 toEntityNorm = toEntity.normalize();
+                        if (waterLook.dot(toEntityNorm) > 0.95) {
+                            waterClosest = dist;
+                            waterTarget = living;
+                        }
+                    }
+
+                    if (waterTarget == null) {
+                        player.sendSystemMessage(Component.literal("Aucune cible en vue!")
+                                .withStyle(ChatFormatting.GRAY));
+                        return;
+                    }
+
+                    // Launch Rainbow Chuzzle transformation
+                    com.noxgg.elementalpower.world.RainbowChuzzleManager.addChuzzle(
+                            new com.noxgg.elementalpower.world.RainbowChuzzleManager.RainbowChuzzle(
+                                    level, player, waterTarget));
+
+                    // Casting particles - rainbow burst from player
+                    for (int c = 0; c < 7; c++) {
+                        var rainbowDust = new net.minecraft.core.particles.DustParticleOptions(
+                                new org.joml.Vector3f[] {
+                                        new org.joml.Vector3f(1.0f, 0.0f, 0.0f),
+                                        new org.joml.Vector3f(1.0f, 0.5f, 0.0f),
+                                        new org.joml.Vector3f(1.0f, 1.0f, 0.0f),
+                                        new org.joml.Vector3f(0.0f, 1.0f, 0.0f),
+                                        new org.joml.Vector3f(0.0f, 0.5f, 1.0f),
+                                        new org.joml.Vector3f(0.3f, 0.0f, 0.8f),
+                                        new org.joml.Vector3f(0.6f, 0.0f, 1.0f)
+                                }[c], 2.0f);
+                        level.sendParticles(rainbowDust,
+                                player.getX(), player.getY() + 1 + c * 0.2, player.getZ(),
+                                5, 0.3, 0.1, 0.3, 0.05);
+                    }
+
+                    // Rainbow beam from player to target
+                    Vec3 waterTargetPos = waterTarget.position();
+                    for (int i = 0; i < 20; i++) {
+                        double t = i / 20.0;
+                        double px = player.getX() + (waterTargetPos.x - player.getX()) * t;
+                        double py = player.getEyeY() + (waterTargetPos.y + 1 - player.getEyeY()) * t;
+                        double pz = player.getZ() + (waterTargetPos.z - player.getZ()) * t;
+                        var beamDust = new net.minecraft.core.particles.DustParticleOptions(
+                                new org.joml.Vector3f[] {
+                                        new org.joml.Vector3f(1.0f, 0.0f, 0.0f),
+                                        new org.joml.Vector3f(1.0f, 0.5f, 0.0f),
+                                        new org.joml.Vector3f(1.0f, 1.0f, 0.0f),
+                                        new org.joml.Vector3f(0.0f, 1.0f, 0.0f),
+                                        new org.joml.Vector3f(0.0f, 0.5f, 1.0f),
+                                        new org.joml.Vector3f(0.3f, 0.0f, 0.8f),
+                                        new org.joml.Vector3f(0.6f, 0.0f, 1.0f)
+                                }[i % 7], 1.5f);
+                        level.sendParticles(beamDust, px, py, pz, 2, 0.05, 0.05, 0.05, 0.01);
+                    }
+
+                    level.playSound(null, player.blockPosition(),
+                            SoundEvents.AMETHYST_BLOCK_CHIME, SoundSource.PLAYERS, 2.0f, 1.0f);
+                    level.playSound(null, player.blockPosition(),
+                            SoundEvents.BEACON_ACTIVATE, SoundSource.PLAYERS, 1.5f, 1.5f);
+
+                    player.sendSystemMessage(Component.literal(">> Chuzzle Arc-en-ciel! ")
+                            .withStyle(ChatFormatting.AQUA, ChatFormatting.BOLD)
+                            .append(Component.literal("Un rayon arc-en-ciel s'abat sur la cible... elle va exploser!")
+                                    .withStyle(ChatFormatting.LIGHT_PURPLE)));
                     return;
                 }
 
