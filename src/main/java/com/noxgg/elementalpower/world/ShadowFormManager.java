@@ -84,7 +84,7 @@ public class ShadowFormManager {
 
                 for (Entity entity : level.getEntities(player,
                         player.getBoundingBox().inflate(30),
-                        e -> e instanceof LivingEntity && e != player && !(e instanceof Player))) {
+                        e -> e instanceof LivingEntity && e != player)) {
                     LivingEntity living = (LivingEntity) entity;
                     Vec3 toEntity = living.position().add(0, living.getBbHeight() / 2, 0).subtract(eye);
                     double dist = toEntity.length();
