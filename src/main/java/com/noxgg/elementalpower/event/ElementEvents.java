@@ -99,6 +99,7 @@ public class ElementEvents {
     }
 
     // === COMBAT MUSIC: Megalovania on hit, stop on kill ===
+    // === SHADOW FORM: Absorb mob appearance on hit ===
     @SubscribeEvent
     public static void onLivingHurt(LivingHurtEvent event) {
         Entity attacker = event.getSource().getEntity();
@@ -107,6 +108,11 @@ public class ElementEvents {
         // Only when a player hits a non-player mob
         if (attacker instanceof ServerPlayer player && !(victim instanceof Player)) {
             CombatMusicManager.onPlayerHitMob(player);
+
+            // Shadow form: absorb mob appearance
+            if (com.noxgg.elementalpower.world.ShadowFormManager.isMaterialized(player.getUUID())) {
+                com.noxgg.elementalpower.world.ShadowFormManager.onPlayerHitMob(player, victim);
+            }
         }
     }
 
@@ -114,6 +120,7 @@ public class ElementEvents {
     public static void onPlayerLogout(PlayerEvent.PlayerLoggedOutEvent event) {
         CombatMusicManager.onPlayerLogout(event.getEntity().getUUID());
         UndertaleBattleManager.onPlayerLogout(event.getEntity().getUUID());
+        com.noxgg.elementalpower.world.ShadowFormManager.onPlayerLogout(event.getEntity().getUUID());
     }
 
     // === SOUL ABSORPTION ON MOB KILL ===

@@ -119,6 +119,12 @@ public class ModMessages {
                 .encoder(UndertaleBattleActionC2SPacket::toBytes)
                 .consumerMainThread(UndertaleBattleActionC2SPacket::handle)
                 .add();
+
+        net.messageBuilder(ShadowFormC2SPacket.class, id(), NetworkDirection.PLAY_TO_SERVER)
+                .decoder(ShadowFormC2SPacket::new)
+                .encoder(ShadowFormC2SPacket::toBytes)
+                .consumerMainThread(ShadowFormC2SPacket::handle)
+                .add();
     }
 
     public static <MSG> void sendToServer(MSG message) {
