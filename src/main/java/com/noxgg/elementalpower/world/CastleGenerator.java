@@ -87,6 +87,9 @@ public class CastleGenerator {
 
         // 9. Spawn villagers in courtyard
         spawnVillagers(level, center, wallSize, groundY);
+
+        // 10. Full lighting in all rooms
+        addFullLighting(level, center, wallSize, keepSize, keepHeight, towerRadius, groundY);
     }
 
     private static void flattenArea(ServerLevel level, BlockPos center, int radius, int groundY) {
@@ -534,6 +537,90 @@ public class CastleGenerator {
         level.setBlock(center.offset(-5, 0, 0).atY(floorY + 6), LANTERN, 2);
         level.setBlock(center.offset(5, 0, 0).atY(floorY + 6), LANTERN, 2);
         level.setBlock(center.offset(0, 0, interior - 3).atY(floorY + 6), LANTERN, 2);
+    }
+
+    /**
+     * Add full lighting to every room in the castle.
+     */
+    private static void addFullLighting(ServerLevel level, BlockPos center, int wallSize, int keepSize, int keepHeight, int towerRadius, int groundY) {
+        int interior = keepSize - 1;
+        BlockState GLOWSTONE = Blocks.GLOWSTONE.defaultBlockState();
+
+        // === THRONE ROOM (1st floor) ceiling lights: groundY+7 (just under 2nd floor at y=8) ===
+        for (int x = -interior + 1; x <= interior - 1; x += 4) {
+            for (int z = -interior + 1; z <= interior - 1; z += 4) {
+                level.setBlock(center.offset(x, 0, z).atY(groundY + 7), GLOWSTONE, 2);
+            }
+        }
+
+        // === ROYAL CHAMBER (2nd floor) ceiling lights: groundY+14 (just under 3rd floor at y=15) ===
+        for (int x = -interior + 1; x <= interior - 1; x += 4) {
+            for (int z = -interior + 1; z <= interior - 1; z += 4) {
+                level.setBlock(center.offset(x, 0, z).atY(groundY + 14), GLOWSTONE, 2);
+            }
+        }
+
+        // === 3RD FLOOR ceiling lights: groundY+23 (just under roof at keepHeight=24) ===
+        for (int x = -interior + 1; x <= interior - 1; x += 4) {
+            for (int z = -interior + 1; z <= interior - 1; z += 4) {
+                level.setBlock(center.offset(x, 0, z).atY(groundY + keepHeight), GLOWSTONE, 2);
+            }
+        }
+        // 3rd floor wall lanterns
+        for (int i = -interior + 2; i <= interior - 2; i += 4) {
+            level.setBlock(center.offset(i, 0, -interior).atY(groundY + 18), LANTERN, 2);
+            level.setBlock(center.offset(i, 0, interior).atY(groundY + 18), LANTERN, 2);
+            level.setBlock(center.offset(-interior, 0, i).atY(groundY + 18), LANTERN, 2);
+            level.setBlock(center.offset(interior, 0, i).atY(groundY + 18), LANTERN, 2);
+        }
+
+        // === TOWER LIGHTING (4 corner towers) ===
+        int[][] towerOffsets = {
+                {wallSize, wallSize}, {-wallSize, wallSize},
+                {wallSize, -wallSize}, {-wallSize, -wallSize}
+        };
+        for (int[] tOff : towerOffsets) {
+            BlockPos tBase = center.offset(tOff[0], 0, tOff[1]);
+            // Lanterns every 5 blocks of height inside towers
+            for (int y = 3; y <= 25; y += 5) {
+                level.setBlock(tBase.atY(groundY + y), LANTERN, 2);
+            }
+            // Glowstone at mid and top inside
+            level.setBlock(tBase.atY(groundY + 10), GLOWSTONE, 2);
+            level.setBlock(tBase.atY(groundY + 20), GLOWSTONE, 2);
+        }
+
+        // === COURTYARD LIGHTING (more lanterns on ground level) ===
+        // Lanterns along outer walls interior
+        for (int i = -wallSize + 3; i <= wallSize - 3; i += 5) {
+            level.setBlock(center.offset(i, 0, -wallSize + 1).atY(groundY + 3), LANTERN, 2);
+            level.setBlock(center.offset(i, 0, wallSize - 1).atY(groundY + 3), LANTERN, 2);
+            level.setBlock(center.offset(-wallSize + 1, 0, i).atY(groundY + 3), LANTERN, 2);
+            level.setBlock(center.offset(wallSize - 1, 0, i).atY(groundY + 3), LANTERN, 2);
+        }
+        // Ground lanterns scattered in courtyard
+        for (int x = -wallSize + 5; x <= wallSize - 5; x += 8) {
+            for (int z = -wallSize + 5; z <= wallSize - 5; z += 8) {
+                // Skip area occupied by the keep
+                if (Math.abs(x) <= keepSize + 2 && Math.abs(z) <= keepSize + 2) continue;
+                level.setBlock(center.offset(x, 0, z).atY(groundY + 1), Blocks.COBBLESTONE_WALL.defaultBlockState(), 2);
+                level.setBlock(center.offset(x, 0, z).atY(groundY + 2), Blocks.COBBLESTONE_WALL.defaultBlockState(), 2);
+                level.setBlock(center.offset(x, 0, z).atY(groundY + 3), LANTERN, 2);
+            }
+        }
+
+        // === OUTER WALL WALKWAY LIGHTING (top of walls) ===
+        for (int i = -wallSize + 3; i <= wallSize - 3; i += 6) {
+            level.setBlock(center.offset(i, 0, -wallSize + 1).atY(groundY + 16), Blocks.TORCH.defaultBlockState(), 2);
+            level.setBlock(center.offset(i, 0, wallSize - 1).atY(groundY + 16), Blocks.TORCH.defaultBlockState(), 2);
+            level.setBlock(center.offset(-wallSize + 1, 0, i).atY(groundY + 16), Blocks.TORCH.defaultBlockState(), 2);
+            level.setBlock(center.offset(wallSize - 1, 0, i).atY(groundY + 16), Blocks.TORCH.defaultBlockState(), 2);
+        }
+
+        // === GATE AREA extra lighting ===
+        level.setBlock(center.offset(0, 0, wallSize - 2).atY(groundY + 5), LANTERN, 2);
+        level.setBlock(center.offset(-5, 0, wallSize - 2).atY(groundY + 5), LANTERN, 2);
+        level.setBlock(center.offset(5, 0, wallSize - 2).atY(groundY + 5), LANTERN, 2);
     }
 
     /**
