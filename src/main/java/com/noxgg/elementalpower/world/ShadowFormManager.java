@@ -197,9 +197,8 @@ public class ShadowFormManager {
             // Dark shadow name
             mob.setCustomName(Component.literal("\u00A78\u00A7l[Ombre] \u00A70" + data.disguiseName));
             mob.setCustomNameVisible(true);
-            // Make it dark with glowing dark effect
-            mob.addEffect(new MobEffectInstance(MobEffects.DARKNESS, Integer.MAX_VALUE, 0, false, false));
-            mob.addEffect(new MobEffectInstance(MobEffects.INVISIBILITY, Integer.MAX_VALUE, 0, false, false));
+            // Visible but dark: slowness icon makes it look sluggish/dark
+            mob.addEffect(new MobEffectInstance(MobEffects.GLOWING, Integer.MAX_VALUE, 0, false, false));
 
             level.addFreshEntity(mob);
             data.disguiseEntity = mob;
