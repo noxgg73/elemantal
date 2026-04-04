@@ -352,7 +352,7 @@ public class UseElementPowerC2SPacket {
                         // Check if player is Alastor (reincarnated)
                         final boolean[] isAlastorHolder = {false};
                         player.getCapability(PlayerElementProvider.PLAYER_ELEMENT).ifPresent(elemData -> {
-                            isAlastorHolder[0] = elemData.isAlastor();
+                            isAlastorHolder[0] = elemData.isAlastorModeActive();
                         });
 
                         if (isAlastorHolder[0]) {

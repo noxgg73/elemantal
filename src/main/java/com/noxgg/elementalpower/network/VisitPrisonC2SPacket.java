@@ -36,7 +36,7 @@ public class VisitPrisonC2SPacket {
                 ElementType element = data.getElement();
 
                 // Alastor override: K key = Demonic Radio Wave
-                if (element == ElementType.DEMON && data.isAlastor()) {
+                if (element == ElementType.DEMON && data.isAlastorModeActive()) {
                     com.noxgg.elementalpower.world.AlastorManager.castRadioWave(player);
                     return;
                 }

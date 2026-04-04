@@ -23,6 +23,24 @@ public class ShadowFormC2SPacket {
             if (player == null) return;
 
             player.getCapability(PlayerElementProvider.PLAYER_ELEMENT).ifPresent(data -> {
+                // Demon class: L key toggles between normal Demon and Alastor mode
+                if (data.getElement() == ElementType.DEMON && data.isAlastor()) {
+                    data.setAlastorModeActive(!data.isAlastorModeActive());
+                    if (data.isAlastorModeActive()) {
+                        player.sendSystemMessage(Component.literal("")
+                                .append(Component.literal(">> ").withStyle(ChatFormatting.DARK_RED))
+                                .append(Component.literal("Mode ALASTOR active! ").withStyle(ChatFormatting.RED, ChatFormatting.BOLD))
+                                .append(Component.literal("Sorts d'Alastor disponibles.").withStyle(ChatFormatting.DARK_RED)));
+                    } else {
+                        player.sendSystemMessage(Component.literal("")
+                                .append(Component.literal(">> ").withStyle(ChatFormatting.DARK_RED))
+                                .append(Component.literal("Mode DEMON active! ").withStyle(ChatFormatting.GOLD, ChatFormatting.BOLD))
+                                .append(Component.literal("Sorts demoniaques classiques.").withStyle(ChatFormatting.DARK_RED)));
+                    }
+                    com.noxgg.elementalpower.event.ElementEvents.syncToClient(player, data);
+                    return;
+                }
+
                 if (data.getElement() != ElementType.DARKNESS) {
                     player.sendSystemMessage(Component.literal("Ce sort n'est pas disponible pour ta classe!")
                             .withStyle(ChatFormatting.RED));

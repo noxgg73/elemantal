@@ -166,6 +166,17 @@ public class ElementEvents {
         });
     }
 
+    // === RACCOON: Immortal Cat God ===
+    @SubscribeEvent
+    public static void onRaccoonHurt(LivingHurtEvent event) {
+        if (event.getEntity() instanceof net.minecraft.world.entity.animal.Cat cat) {
+            if (cat.getTags().contains("raccoon_cat_god")) {
+                event.setCanceled(true);
+                cat.setHealth(cat.getMaxHealth());
+            }
+        }
+    }
+
     // === COMBAT MUSIC: Megalovania on hit, stop on kill ===
     // === SHADOW FORM: Absorb mob appearance on hit ===
     @SubscribeEvent
@@ -190,6 +201,17 @@ public class ElementEvents {
         UndertaleBattleManager.onPlayerLogout(event.getEntity().getUUID());
         com.noxgg.elementalpower.world.ShadowFormManager.onPlayerLogout(event.getEntity().getUUID());
         com.noxgg.elementalpower.world.RaccoonManager.onPlayerLogout(event.getEntity().getUUID());
+    }
+
+    // === RACCOON: Prevent death ===
+    @SubscribeEvent
+    public static void onRaccoonDeath(LivingDeathEvent event) {
+        if (event.getEntity() instanceof net.minecraft.world.entity.animal.Cat cat) {
+            if (cat.getTags().contains("raccoon_cat_god")) {
+                event.setCanceled(true);
+                cat.setHealth(cat.getMaxHealth());
+            }
+        }
     }
 
     // === SOUL ABSORPTION ON MOB KILL ===
@@ -418,8 +440,20 @@ public class ElementEvents {
             if (player.tickCount % 300 == 0) {
                 int xpNeeded = data.getXpForNextLevel();
                 String soulText = element == ElementType.DARKNESS ? " | Ames: " + data.getSouls() : "";
-                String displayName = (element == ElementType.DEMON && data.isAlastor()) ? "ALASTOR" : element.getDisplayName();
-                ChatFormatting displayColor = (element == ElementType.DEMON && data.isAlastor()) ? ChatFormatting.RED : element.getColor();
+                String displayName;
+                ChatFormatting displayColor;
+                if (element == ElementType.DEMON && data.isAlastor()) {
+                    if (data.isAlastorModeActive()) {
+                        displayName = "ALASTOR";
+                        displayColor = ChatFormatting.RED;
+                    } else {
+                        displayName = "DEMON";
+                        displayColor = ChatFormatting.GOLD;
+                    }
+                } else {
+                    displayName = element.getDisplayName();
+                    displayColor = element.getColor();
+                }
                 player.displayClientMessage(Component.literal("")
                         .append(Component.literal(displayName).withStyle(displayColor))
                         .append(Component.literal(" Niv." + level).withStyle(ChatFormatting.YELLOW))

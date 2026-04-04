@@ -10,6 +10,7 @@ public class PlayerElement {
     private int souls = 0;
     private String subClass = ""; // "chara" or "frisk" for Undertale class
     private boolean isAlastor = false; // Demon class: reincarnated as Alastor after death
+    private boolean alastorModeActive = true; // true = Alastor spells, false = normal Demon spells
     private int alastorSpellSlot = 0; // 0=Tentacules, 1=Vaudou, 2=Onde Radio
 
     public ElementType getElement() { return element; }
@@ -33,7 +34,9 @@ public class PlayerElement {
     public boolean isChara() { return "chara".equals(subClass); }
 
     public boolean isAlastor() { return isAlastor; }
-    public void setAlastor(boolean alastor) { this.isAlastor = alastor; }
+    public void setAlastor(boolean alastor) { this.isAlastor = alastor; if (alastor) this.alastorModeActive = true; }
+    public boolean isAlastorModeActive() { return isAlastor && alastorModeActive; }
+    public void setAlastorModeActive(boolean active) { this.alastorModeActive = active; }
     public int getAlastorSpellSlot() { return alastorSpellSlot; }
     public void setAlastorSpellSlot(int slot) { this.alastorSpellSlot = slot % 3; }
     public void cycleAlastorSpell() { this.alastorSpellSlot = (alastorSpellSlot + 1) % 3; }
@@ -73,6 +76,7 @@ public class PlayerElement {
         this.souls = source.souls;
         this.subClass = source.subClass;
         this.isAlastor = source.isAlastor;
+        this.alastorModeActive = source.alastorModeActive;
         this.alastorSpellSlot = source.alastorSpellSlot;
     }
 
@@ -84,6 +88,7 @@ public class PlayerElement {
         tag.putInt("souls", souls);
         tag.putString("subClass", subClass);
         tag.putBoolean("isAlastor", isAlastor);
+        tag.putBoolean("alastorModeActive", alastorModeActive);
         tag.putInt("alastorSpellSlot", alastorSpellSlot);
     }
 
@@ -96,6 +101,7 @@ public class PlayerElement {
         souls = tag.getInt("souls");
         subClass = tag.getString("subClass");
         isAlastor = tag.getBoolean("isAlastor");
+        alastorModeActive = tag.contains("alastorModeActive") ? tag.getBoolean("alastorModeActive") : isAlastor;
         alastorSpellSlot = tag.getInt("alastorSpellSlot");
     }
 }

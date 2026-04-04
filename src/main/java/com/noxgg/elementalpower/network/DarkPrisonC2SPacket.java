@@ -39,7 +39,7 @@ public class DarkPrisonC2SPacket {
                 ElementType element = data.getElement();
 
                 // Alastor override: G key = Voodoo Symbols
-                if (element == ElementType.DEMON && data.isAlastor()) {
+                if (element == ElementType.DEMON && data.isAlastorModeActive()) {
                     com.noxgg.elementalpower.world.AlastorManager.castVoodooSymbols(player);
                     return;
                 }
