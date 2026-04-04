@@ -67,37 +67,64 @@ public class TimeDomeManager {
                 continue;
             }
 
-            // Every tick: repel entities trying to enter from outside
+            // Every tick: repel entities at barrier edge (both directions — nothing enters or exits)
             // Every 2 ticks: render barrier particles
             // Every 10 ticks: re-paralyze mobs inside
 
-            // === REPEL entities at the barrier edge ===
+            // === REPEL entities at the barrier edge (BOTH directions) ===
             dome.level.getEntities(dome.owner, dome.owner.getBoundingBox().inflate(dome.radius + 5),
                     e -> e != dome.owner).forEach(e -> {
                 double dist = dome.distFromCenter(e);
 
-                // Entity is at the barrier edge trying to enter (between radius-1 and radius+1)
+                // Entity is at the barrier edge (between radius-1.5 and radius+1.5)
                 if (dist > dome.radius - 1.5 && dist < dome.radius + 1.5) {
-                    // Push entity away from dome center
                     double dx = e.getX() - dome.x;
                     double dy = e.getY() - dome.y;
                     double dz = e.getZ() - dome.z;
                     double len = Math.sqrt(dx * dx + dy * dy + dz * dz);
                     if (len > 0.1) {
                         double pushStrength = 1.5;
-                        e.setDeltaMovement(dx / len * pushStrength, 0.3, dz / len * pushStrength);
+                        // Push OUTWARD if outside, push INWARD if inside
+                        double direction = (dist >= dome.radius) ? 1.0 : -1.0;
+                        e.setDeltaMovement(direction * dx / len * pushStrength, 0.3, direction * dz / len * pushStrength);
                         e.hurtMarked = true;
 
-                        // Barrier impact particles (crackling energy at contact point)
+                        // Barrier impact particles
                         if (dome.ticksRemaining % 5 == 0) {
                             dome.level.sendParticles(ParticleTypes.ELECTRIC_SPARK,
                                     e.getX(), e.getY() + 1, e.getZ(), 8, 0.2, 0.3, 0.2, 0.1);
                             dome.level.sendParticles(ParticleTypes.END_ROD,
                                     e.getX(), e.getY() + 1, e.getZ(), 3, 0.1, 0.2, 0.1, 0.05);
-                            // Zap sound on impact
                             dome.level.playSound(null, e.blockPosition(),
                                     SoundEvents.LIGHTNING_BOLT_THUNDER, SoundSource.AMBIENT, 0.3f, 2.0f);
                         }
+                    }
+                }
+
+                // Hard clamp: prevent crossing the barrier in either direction
+                // Entities inside stay inside, entities outside stay outside
+                double dx2 = e.getX() - dome.x;
+                double dz2 = e.getZ() - dome.z;
+                double horizLen = Math.sqrt(dx2 * dx2 + dz2 * dz2);
+                if (horizLen > 0.1) {
+                    boolean isInside = dist < dome.radius;
+                    Vec3 prevMotion = e.getDeltaMovement();
+                    // Check if entity is moving toward the barrier
+                    double radialVelocity = (dx2 * prevMotion.x + dz2 * prevMotion.z) / horizLen;
+                    boolean movingOutward = radialVelocity > 0;
+
+                    if (isInside && movingOutward && dist > dome.radius - 2.0) {
+                        // Inside entity trying to escape — clamp back inside
+                        double clampDist = dome.radius - 2.5;
+                        e.teleportTo(dome.x + dx2 / horizLen * clampDist, e.getY(), dome.z + dz2 / horizLen * clampDist);
+                        e.setDeltaMovement(Vec3.ZERO);
+                        e.hurtMarked = true;
+                    } else if (!isInside && !movingOutward && dist < dome.radius + 2.0) {
+                        // Outside entity trying to enter — clamp back outside
+                        double clampDist = dome.radius + 2.5;
+                        e.teleportTo(dome.x + dx2 / horizLen * clampDist, e.getY(), dome.z + dz2 / horizLen * clampDist);
+                        e.setDeltaMovement(Vec3.ZERO);
+                        e.hurtMarked = true;
                     }
                 }
             });
