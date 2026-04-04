@@ -349,17 +349,28 @@ public class UseElementPowerC2SPacket {
                         level.playSound(null, player.blockPosition(), SoundEvents.AMETHYST_BLOCK_CHIME, SoundSource.PLAYERS, 1.0f, 1.5f);
                     }
                     case DEMON -> {
-                        // Fire aura + strength
-                        player.addEffect(new MobEffectInstance(MobEffects.DAMAGE_BOOST, 400, 2));
-                        player.addEffect(new MobEffectInstance(MobEffects.FIRE_RESISTANCE, 600, 0));
-                        level.getEntities(player, player.getBoundingBox().inflate(6), e -> e != player)
-                                .forEach(e -> {
-                                    if (e instanceof net.minecraft.world.entity.LivingEntity living) {
-                                        living.setSecondsOnFire(10);
-                                        living.addEffect(new MobEffectInstance(MobEffects.WITHER, 100, 1));
-                                    }
-                                });
-                        level.playSound(null, player.blockPosition(), SoundEvents.WITHER_SPAWN, SoundSource.PLAYERS, 0.5f, 1.2f);
+                        // Check if player is Alastor (reincarnated)
+                        final boolean[] isAlastorHolder = {false};
+                        player.getCapability(PlayerElementProvider.PLAYER_ELEMENT).ifPresent(elemData -> {
+                            isAlastorHolder[0] = elemData.isAlastor();
+                        });
+
+                        if (isAlastorHolder[0]) {
+                            // ALASTOR: Shadow Tentacles (R key)
+                            com.noxgg.elementalpower.world.AlastorManager.castShadowTentacles(player);
+                        } else {
+                            // Normal Demon: Fire aura + strength
+                            player.addEffect(new MobEffectInstance(MobEffects.DAMAGE_BOOST, 400, 2));
+                            player.addEffect(new MobEffectInstance(MobEffects.FIRE_RESISTANCE, 600, 0));
+                            level.getEntities(player, player.getBoundingBox().inflate(6), e -> e != player)
+                                    .forEach(e -> {
+                                        if (e instanceof net.minecraft.world.entity.LivingEntity living) {
+                                            living.setSecondsOnFire(10);
+                                            living.addEffect(new MobEffectInstance(MobEffects.WITHER, 100, 1));
+                                        }
+                                    });
+                            level.playSound(null, player.blockPosition(), SoundEvents.WITHER_SPAWN, SoundSource.PLAYERS, 0.5f, 1.2f);
+                        }
                     }
                     case NATURE -> {
                         // Mega regen + grow plants nearby

@@ -9,6 +9,8 @@ public class PlayerElement {
     private int xp = 0;
     private int souls = 0;
     private String subClass = ""; // "chara" or "frisk" for Undertale class
+    private boolean isAlastor = false; // Demon class: reincarnated as Alastor after death
+    private int alastorSpellSlot = 0; // 0=Tentacules, 1=Vaudou, 2=Onde Radio
 
     public ElementType getElement() { return element; }
 
@@ -29,6 +31,12 @@ public class PlayerElement {
     public void setSubClass(String subClass) { this.subClass = subClass; }
     public boolean isFrisk() { return "frisk".equals(subClass); }
     public boolean isChara() { return "chara".equals(subClass); }
+
+    public boolean isAlastor() { return isAlastor; }
+    public void setAlastor(boolean alastor) { this.isAlastor = alastor; }
+    public int getAlastorSpellSlot() { return alastorSpellSlot; }
+    public void setAlastorSpellSlot(int slot) { this.alastorSpellSlot = slot % 3; }
+    public void cycleAlastorSpell() { this.alastorSpellSlot = (alastorSpellSlot + 1) % 3; }
 
     public int getXpForNextLevel() {
         return level * 50 + (level * level * 10);
@@ -64,6 +72,8 @@ public class PlayerElement {
         this.xp = source.xp;
         this.souls = source.souls;
         this.subClass = source.subClass;
+        this.isAlastor = source.isAlastor;
+        this.alastorSpellSlot = source.alastorSpellSlot;
     }
 
     public void saveNBT(CompoundTag tag) {
@@ -73,6 +83,8 @@ public class PlayerElement {
         tag.putInt("xp", xp);
         tag.putInt("souls", souls);
         tag.putString("subClass", subClass);
+        tag.putBoolean("isAlastor", isAlastor);
+        tag.putInt("alastorSpellSlot", alastorSpellSlot);
     }
 
     public void loadNBT(CompoundTag tag) {
@@ -83,5 +95,7 @@ public class PlayerElement {
         xp = tag.getInt("xp");
         souls = tag.getInt("souls");
         subClass = tag.getString("subClass");
+        isAlastor = tag.getBoolean("isAlastor");
+        alastorSpellSlot = tag.getInt("alastorSpellSlot");
     }
 }

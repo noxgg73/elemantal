@@ -62,6 +62,70 @@ public class ElementEvents {
         if (event.getEntity() instanceof ServerPlayer serverPlayer) {
             serverPlayer.getCapability(PlayerElementProvider.PLAYER_ELEMENT).ifPresent(data -> {
                 syncToClient(serverPlayer, data);
+
+                // Alastor transformation on respawn
+                if (data.getElement() == ElementType.DEMON && data.isAlastor()) {
+                    if (serverPlayer.level() instanceof ServerLevel serverLevel) {
+                        // Red and black particle burst
+                        var redDust = new net.minecraft.core.particles.DustParticleOptions(
+                                new org.joml.Vector3f(0.8f, 0.0f, 0.0f), 3.0f);
+                        var blackDust = new net.minecraft.core.particles.DustParticleOptions(
+                                new org.joml.Vector3f(0.1f, 0.0f, 0.0f), 2.5f);
+
+                        // Radio static circle
+                        for (double angle = 0; angle < Math.PI * 2; angle += 0.15) {
+                            for (double r = 1; r <= 4; r += 0.5) {
+                                double px = serverPlayer.getX() + Math.cos(angle) * r;
+                                double pz = serverPlayer.getZ() + Math.sin(angle) * r;
+                                serverLevel.sendParticles(redDust, px, serverPlayer.getY() + 0.1, pz, 1, 0, 0, 0, 0);
+                            }
+                        }
+
+                        // Voodoo symbols rising
+                        for (int i = 0; i < 40; i++) {
+                            double ox = (serverLevel.random.nextDouble() - 0.5) * 3;
+                            double oz = (serverLevel.random.nextDouble() - 0.5) * 3;
+                            serverLevel.sendParticles(blackDust,
+                                    serverPlayer.getX() + ox, serverPlayer.getY() + serverLevel.random.nextDouble() * 4,
+                                    serverPlayer.getZ() + oz, 1, 0, 0.1, 0, 0.02);
+                        }
+
+                        // Shadow tentacle particles
+                        serverLevel.sendParticles(net.minecraft.core.particles.ParticleTypes.LARGE_SMOKE,
+                                serverPlayer.getX(), serverPlayer.getY(), serverPlayer.getZ(), 60, 2, 0.5, 2, 0.02);
+                        serverLevel.sendParticles(net.minecraft.core.particles.ParticleTypes.SOUL_FIRE_FLAME,
+                                serverPlayer.getX(), serverPlayer.getY() + 1, serverPlayer.getZ(), 30, 1, 1, 1, 0.05);
+
+                        // Sounds
+                        serverLevel.playSound(null, serverPlayer.blockPosition(),
+                                SoundEvents.WITHER_SPAWN, SoundSource.PLAYERS, 1.0f, 1.5f);
+                        serverLevel.playSound(null, serverPlayer.blockPosition(),
+                                SoundEvents.ENDER_DRAGON_GROWL, SoundSource.PLAYERS, 0.8f, 2.0f);
+
+                        // Alastor buffs
+                        serverPlayer.addEffect(new MobEffectInstance(MobEffects.DAMAGE_BOOST, 600, 2, false, false));
+                        serverPlayer.addEffect(new MobEffectInstance(MobEffects.FIRE_RESISTANCE, 1200, 0, false, false));
+                        serverPlayer.addEffect(new MobEffectInstance(MobEffects.DAMAGE_RESISTANCE, 600, 1, false, false));
+                        serverPlayer.addEffect(new MobEffectInstance(MobEffects.NIGHT_VISION, 1200, 0, false, false));
+
+                        // Message
+                        serverPlayer.sendSystemMessage(Component.literal("")
+                                .append(Component.literal("♪ ").withStyle(ChatFormatting.RED))
+                                .append(Component.literal("Vous etes de retour dans le jeu, mon cher! ").withStyle(ChatFormatting.DARK_RED, ChatFormatting.BOLD))
+                                .append(Component.literal("♪").withStyle(ChatFormatting.RED)));
+                        serverPlayer.sendSystemMessage(Component.literal("")
+                                .append(Component.literal(">> ").withStyle(ChatFormatting.DARK_RED))
+                                .append(Component.literal("ALASTOR, LE DEMON DE LA RADIO").withStyle(ChatFormatting.RED, ChatFormatting.BOLD))
+                                .append(Component.literal(" - Reincarnation complete!").withStyle(ChatFormatting.DARK_RED)));
+                        serverPlayer.sendSystemMessage(Component.literal("")
+                                .append(Component.literal("   R").withStyle(ChatFormatting.YELLOW, ChatFormatting.BOLD))
+                                .append(Component.literal(" = Tentacules d'Ombre | ").withStyle(ChatFormatting.GRAY))
+                                .append(Component.literal("G").withStyle(ChatFormatting.YELLOW, ChatFormatting.BOLD))
+                                .append(Component.literal(" = Symboles Vaudou | ").withStyle(ChatFormatting.GRAY))
+                                .append(Component.literal("K").withStyle(ChatFormatting.YELLOW, ChatFormatting.BOLD))
+                                .append(Component.literal(" = Onde Radio Demoniaque").withStyle(ChatFormatting.GRAY)));
+                    }
+                }
             });
         }
     }
@@ -73,6 +137,10 @@ public class ElementEvents {
             event.getOriginal().getCapability(PlayerElementProvider.PLAYER_ELEMENT).ifPresent(oldData -> {
                 event.getEntity().getCapability(PlayerElementProvider.PLAYER_ELEMENT).ifPresent(newData -> {
                     newData.copyFrom(oldData);
+                    // Demon class: reincarnate as Alastor on death
+                    if (oldData.getElement() == ElementType.DEMON && !oldData.isAlastor()) {
+                        newData.setAlastor(true);
+                    }
                 });
             });
             event.getOriginal().invalidateCaps();
@@ -302,9 +370,20 @@ public class ElementEvents {
                     if (level >= 20) player.addEffect(new MobEffectInstance(MobEffects.GLOWING, bonusDuration, 0, false, false));
                 }
                 case DEMON -> {
-                    player.addEffect(new MobEffectInstance(MobEffects.DAMAGE_BOOST, bonusDuration, bonusAmplifier, false, false));
-                    player.addEffect(new MobEffectInstance(MobEffects.FIRE_RESISTANCE, bonusDuration, 0, false, false));
-                    if (level >= 20) player.addEffect(new MobEffectInstance(MobEffects.DAMAGE_RESISTANCE, bonusDuration, 0, false, false));
+                    if (data.isAlastor()) {
+                        // Alastor passives: shadow power
+                        player.addEffect(new MobEffectInstance(MobEffects.DAMAGE_BOOST, bonusDuration, 1 + bonusAmplifier, false, false));
+                        player.addEffect(new MobEffectInstance(MobEffects.FIRE_RESISTANCE, bonusDuration, 0, false, false));
+                        player.addEffect(new MobEffectInstance(MobEffects.NIGHT_VISION, bonusDuration, 0, false, false));
+                        if (level >= 20) {
+                            player.addEffect(new MobEffectInstance(MobEffects.DAMAGE_RESISTANCE, bonusDuration, 1, false, false));
+                            player.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SPEED, bonusDuration, 0, false, false));
+                        }
+                    } else {
+                        player.addEffect(new MobEffectInstance(MobEffects.DAMAGE_BOOST, bonusDuration, bonusAmplifier, false, false));
+                        player.addEffect(new MobEffectInstance(MobEffects.FIRE_RESISTANCE, bonusDuration, 0, false, false));
+                        if (level >= 20) player.addEffect(new MobEffectInstance(MobEffects.DAMAGE_RESISTANCE, bonusDuration, 0, false, false));
+                    }
                 }
                 case NATURE -> {
                     player.addEffect(new MobEffectInstance(MobEffects.REGENERATION, bonusDuration, bonusAmplifier, false, false));
@@ -338,8 +417,10 @@ public class ElementEvents {
             if (player.tickCount % 300 == 0) {
                 int xpNeeded = data.getXpForNextLevel();
                 String soulText = element == ElementType.DARKNESS ? " | Ames: " + data.getSouls() : "";
+                String displayName = (element == ElementType.DEMON && data.isAlastor()) ? "ALASTOR" : element.getDisplayName();
+                ChatFormatting displayColor = (element == ElementType.DEMON && data.isAlastor()) ? ChatFormatting.RED : element.getColor();
                 player.displayClientMessage(Component.literal("")
-                        .append(Component.literal(element.getDisplayName()).withStyle(element.getColor()))
+                        .append(Component.literal(displayName).withStyle(displayColor))
                         .append(Component.literal(" Niv." + level).withStyle(ChatFormatting.YELLOW))
                         .append(Component.literal(" [" + data.getXp() + "/" + xpNeeded + " XP]").withStyle(ChatFormatting.GREEN))
                         .append(Component.literal(soulText).withStyle(ChatFormatting.DARK_PURPLE)),
@@ -350,6 +431,6 @@ public class ElementEvents {
 
     public static void syncToClient(ServerPlayer player, PlayerElement data) {
         ModMessages.sendToPlayer(new SyncElementS2CPacket(
-                data.getElement().getId(), data.getLevel(), data.getXp(), data.getSouls(), data.getSubClass()), player);
+                data.getElement().getId(), data.getLevel(), data.getXp(), data.getSouls(), data.getSubClass(), data.isAlastor()), player);
     }
 }

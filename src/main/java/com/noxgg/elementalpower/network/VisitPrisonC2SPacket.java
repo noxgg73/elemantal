@@ -34,6 +34,13 @@ public class VisitPrisonC2SPacket {
 
             player.getCapability(PlayerElementProvider.PLAYER_ELEMENT).ifPresent(data -> {
                 ElementType element = data.getElement();
+
+                // Alastor override: K key = Demonic Radio Wave
+                if (element == ElementType.DEMON && data.isAlastor()) {
+                    com.noxgg.elementalpower.world.AlastorManager.castRadioWave(player);
+                    return;
+                }
+
                 if (element != ElementType.ROYAL && element != ElementType.DARKNESS && element != ElementType.DEMON) {
                     player.sendSystemMessage(Component.literal("Ce pouvoir n'est pas disponible pour ta classe!")
                             .withStyle(ChatFormatting.RED));

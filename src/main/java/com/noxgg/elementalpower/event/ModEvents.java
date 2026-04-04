@@ -12,6 +12,7 @@ import com.noxgg.elementalpower.world.SoulTsunamiManager;
 import com.noxgg.elementalpower.world.SpiritManager;
 import com.noxgg.elementalpower.world.RainbowChuzzleManager;
 import com.noxgg.elementalpower.world.ShadowFormManager;
+import com.noxgg.elementalpower.world.AlastorManager;
 import com.noxgg.elementalpower.world.DarkPrisonManager;
 import com.noxgg.elementalpower.world.PoisonDragonManager;
 import com.noxgg.elementalpower.world.TimeAbyssManager;
@@ -123,6 +124,7 @@ public class ModEvents {
             SpiritManager.tick();
             RainbowChuzzleManager.tick();
             ShadowFormManager.tick();
+            AlastorManager.tick();
         }
     }
 

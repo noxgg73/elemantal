@@ -14,22 +14,28 @@ public class SyncElementS2CPacket {
     private final int xp;
     private final int souls;
     private final String subClass;
+    private final boolean isAlastor;
 
     public SyncElementS2CPacket(String elementId, int level, int xp, int souls) {
-        this(elementId, level, xp, souls, "");
+        this(elementId, level, xp, souls, "", false);
     }
 
     public SyncElementS2CPacket(String elementId, int level, int xp, int souls, String subClass) {
+        this(elementId, level, xp, souls, subClass, false);
+    }
+
+    public SyncElementS2CPacket(String elementId, int level, int xp, int souls, String subClass, boolean isAlastor) {
         this.elementId = elementId;
         this.level = level;
         this.xp = xp;
         this.souls = souls;
         this.subClass = subClass;
+        this.isAlastor = isAlastor;
     }
 
     // Keep backwards-compatible constructor
     public SyncElementS2CPacket(String elementId) {
-        this(elementId, 1, 0, 0, "");
+        this(elementId, 1, 0, 0, "", false);
     }
 
     public SyncElementS2CPacket(FriendlyByteBuf buf) {
@@ -38,6 +44,7 @@ public class SyncElementS2CPacket {
         this.xp = buf.readInt();
         this.souls = buf.readInt();
         this.subClass = buf.readUtf();
+        this.isAlastor = buf.readBoolean();
     }
 
     public void toBytes(FriendlyByteBuf buf) {
@@ -46,6 +53,7 @@ public class SyncElementS2CPacket {
         buf.writeInt(xp);
         buf.writeInt(souls);
         buf.writeUtf(subClass);
+        buf.writeBoolean(isAlastor);
     }
 
     public boolean handle(Supplier<NetworkEvent.Context> supplier) {
@@ -56,6 +64,7 @@ public class SyncElementS2CPacket {
                         .ifPresent(data -> {
                             data.setElement(ElementType.fromId(elementId));
                             data.setSubClass(subClass);
+                            data.setAlastor(isAlastor);
                             data.addXp(0); // just init
                         });
             }
