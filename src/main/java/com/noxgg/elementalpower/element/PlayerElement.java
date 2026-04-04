@@ -12,6 +12,7 @@ public class PlayerElement {
     private boolean isAlastor = false; // Demon class: reincarnated as Alastor after death
     private boolean alastorModeActive = true; // true = Alastor spells, false = normal Demon spells
     private int alastorSpellSlot = 0; // 0=Tentacules, 1=Vaudou, 2=Onde Radio
+    private boolean hasPuppeteerPower = false; // Fire class: puppeteer power from killing Pure Vanilla
 
     public ElementType getElement() { return element; }
 
@@ -40,6 +41,9 @@ public class PlayerElement {
     public int getAlastorSpellSlot() { return alastorSpellSlot; }
     public void setAlastorSpellSlot(int slot) { this.alastorSpellSlot = slot % 3; }
     public void cycleAlastorSpell() { this.alastorSpellSlot = (alastorSpellSlot + 1) % 3; }
+
+    public boolean hasPuppeteerPower() { return hasPuppeteerPower; }
+    public void setPuppeteerPower(boolean power) { this.hasPuppeteerPower = power; }
 
     public int getXpForNextLevel() {
         return level * 50 + (level * level * 10);
@@ -78,6 +82,7 @@ public class PlayerElement {
         this.isAlastor = source.isAlastor;
         this.alastorModeActive = source.alastorModeActive;
         this.alastorSpellSlot = source.alastorSpellSlot;
+        this.hasPuppeteerPower = source.hasPuppeteerPower;
     }
 
     public void saveNBT(CompoundTag tag) {
@@ -90,6 +95,7 @@ public class PlayerElement {
         tag.putBoolean("isAlastor", isAlastor);
         tag.putBoolean("alastorModeActive", alastorModeActive);
         tag.putInt("alastorSpellSlot", alastorSpellSlot);
+        tag.putBoolean("hasPuppeteerPower", hasPuppeteerPower);
     }
 
     public void loadNBT(CompoundTag tag) {
@@ -103,5 +109,6 @@ public class PlayerElement {
         isAlastor = tag.getBoolean("isAlastor");
         alastorModeActive = tag.contains("alastorModeActive") ? tag.getBoolean("alastorModeActive") : isAlastor;
         alastorSpellSlot = tag.getInt("alastorSpellSlot");
+        hasPuppeteerPower = tag.getBoolean("hasPuppeteerPower");
     }
 }

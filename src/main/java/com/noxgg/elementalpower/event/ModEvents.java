@@ -13,7 +13,9 @@ import com.noxgg.elementalpower.world.SpiritManager;
 import com.noxgg.elementalpower.world.RainbowChuzzleManager;
 import com.noxgg.elementalpower.world.ShadowFormManager;
 import com.noxgg.elementalpower.world.AlastorManager;
+import com.noxgg.elementalpower.world.PuppeteerManager;
 import com.noxgg.elementalpower.world.RaccoonManager;
+import com.noxgg.elementalpower.world.ShadowMilkDomainManager;
 import com.noxgg.elementalpower.world.DarkPrisonManager;
 import com.noxgg.elementalpower.world.PoisonDragonManager;
 import com.noxgg.elementalpower.world.TimeAbyssManager;
@@ -127,6 +129,8 @@ public class ModEvents {
             ShadowFormManager.tick();
             AlastorManager.tick();
             RaccoonManager.tick();
+            ShadowMilkDomainManager.tick();
+            PuppeteerManager.tick();
         }
     }
 

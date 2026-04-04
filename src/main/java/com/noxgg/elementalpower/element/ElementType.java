@@ -38,7 +38,7 @@ public enum ElementType {
 
     public String getDescription() {
         return switch (this) {
-            case FIRE -> "Maitrise du feu et des flammes. Immunite au feu, boules de feu.";
+            case FIRE -> "Maitrise du feu et des flammes. Immunite au feu, boules de feu. Pouvoir Marionnettiste deblocable!";
             case WATER -> "Maitrise de l'eau. Respiration aquatique, regeneration, soin.";
             case EARTH -> "Maitrise de la terre. Resistance aux degats, murs de pierre.";
             case AIR -> "Maitrise de l'air. Vitesse, saut, chute lente.";

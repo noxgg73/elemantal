@@ -46,11 +46,23 @@ public class UseElementPowerC2SPacket {
 
                 switch (element) {
                     case FIRE -> {
-                        SmallFireball fireball = new SmallFireball(level, player,
-                                look.x * 2, look.y * 2, look.z * 2);
-                        fireball.setPos(player.getX() + look.x, player.getEyeY() - 0.1, player.getZ() + look.z);
-                        level.addFreshEntity(fireball);
-                        level.playSound(null, player.blockPosition(), SoundEvents.BLAZE_SHOOT, SoundSource.PLAYERS, 1.0f, 1.0f);
+                        // Check if player has Puppeteer power
+                        final boolean[] hasPuppeteer = {false};
+                        player.getCapability(PlayerElementProvider.PLAYER_ELEMENT).ifPresent(elemData -> {
+                            hasPuppeteer[0] = elemData.hasPuppeteerPower();
+                        });
+
+                        if (hasPuppeteer[0]) {
+                            // PUPPETEER MODE: control mobs like a puppeteer
+                            com.noxgg.elementalpower.world.PuppeteerManager.activate(player);
+                        } else {
+                            // Normal Fire: fireball
+                            SmallFireball fireball = new SmallFireball(level, player,
+                                    look.x * 2, look.y * 2, look.z * 2);
+                            fireball.setPos(player.getX() + look.x, player.getEyeY() - 0.1, player.getZ() + look.z);
+                            level.addFreshEntity(fireball);
+                            level.playSound(null, player.blockPosition(), SoundEvents.BLAZE_SHOOT, SoundSource.PLAYERS, 1.0f, 1.0f);
+                        }
                     }
                     case WATER -> {
                         player.heal(8.0f);

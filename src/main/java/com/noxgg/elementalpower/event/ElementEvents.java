@@ -166,14 +166,13 @@ public class ElementEvents {
         });
     }
 
-    // === RACCOON: Immortal Cat God ===
+    // === RACCOON + SHADOW MILK: Immortal entities ===
     @SubscribeEvent
-    public static void onRaccoonHurt(LivingHurtEvent event) {
-        if (event.getEntity() instanceof net.minecraft.world.entity.animal.Cat cat) {
-            if (cat.getTags().contains("raccoon_cat_god")) {
-                event.setCanceled(true);
-                cat.setHealth(cat.getMaxHealth());
-            }
+    public static void onImmortalHurt(LivingHurtEvent event) {
+        LivingEntity entity = event.getEntity();
+        if (entity.getTags().contains("raccoon_cat_god") || entity.getTags().contains("shadow_milk_boss")) {
+            event.setCanceled(true);
+            entity.setHealth(entity.getMaxHealth());
         }
     }
 
@@ -201,16 +200,16 @@ public class ElementEvents {
         UndertaleBattleManager.onPlayerLogout(event.getEntity().getUUID());
         com.noxgg.elementalpower.world.ShadowFormManager.onPlayerLogout(event.getEntity().getUUID());
         com.noxgg.elementalpower.world.RaccoonManager.onPlayerLogout(event.getEntity().getUUID());
+        com.noxgg.elementalpower.world.PuppeteerManager.onPlayerLogout(event.getEntity().getUUID());
     }
 
-    // === RACCOON: Prevent death ===
+    // === RACCOON + SHADOW MILK: Prevent death ===
     @SubscribeEvent
-    public static void onRaccoonDeath(LivingDeathEvent event) {
-        if (event.getEntity() instanceof net.minecraft.world.entity.animal.Cat cat) {
-            if (cat.getTags().contains("raccoon_cat_god")) {
-                event.setCanceled(true);
-                cat.setHealth(cat.getMaxHealth());
-            }
+    public static void onImmortalDeath(LivingDeathEvent event) {
+        LivingEntity entity = event.getEntity();
+        if (entity.getTags().contains("raccoon_cat_god") || entity.getTags().contains("shadow_milk_boss")) {
+            event.setCanceled(true);
+            entity.setHealth(entity.getMaxHealth());
         }
     }
 
@@ -222,6 +221,47 @@ public class ElementEvents {
 
         if (!(source instanceof ServerPlayer player)) return;
         if (!(player.level() instanceof ServerLevel serverLevel)) return;
+
+        // Pure Vanilla killed -> grant Puppeteer power to Fire class
+        if (killed instanceof net.minecraft.world.entity.npc.Villager villager
+                && villager.getTags().contains("pure_vanilla_prisoner")) {
+            player.getCapability(PlayerElementProvider.PLAYER_ELEMENT).ifPresent(data -> {
+                if (data.getElement() == ElementType.FIRE && !data.hasPuppeteerPower()) {
+                    data.setPuppeteerPower(true);
+                    syncToClient(player, data);
+
+                    // Dramatic reveal
+                    player.sendSystemMessage(Component.literal(""));
+                    player.sendSystemMessage(Component.literal("")
+                            .append(Component.literal("   Pure Vanilla").withStyle(ChatFormatting.WHITE, ChatFormatting.BOLD))
+                            .append(Component.literal(" s'effondre...").withStyle(ChatFormatting.GRAY, ChatFormatting.ITALIC)));
+                    player.sendSystemMessage(Component.literal(""));
+                    player.sendSystemMessage(Component.literal("")
+                            .append(Component.literal(">> NOUVEAU POUVOIR DEBLOQUE: ").withStyle(ChatFormatting.GOLD, ChatFormatting.BOLD))
+                            .append(Component.literal("MARIONNETTISTE!").withStyle(ChatFormatting.YELLOW, ChatFormatting.BOLD)));
+                    player.sendSystemMessage(Component.literal("")
+                            .append(Component.literal("   Appuyez sur ").withStyle(ChatFormatting.GRAY))
+                            .append(Component.literal("R").withStyle(ChatFormatting.YELLOW, ChatFormatting.BOLD))
+                            .append(Component.literal(" pour controler les mobs autour de vous!").withStyle(ChatFormatting.GRAY)));
+                    player.sendSystemMessage(Component.literal(""));
+
+                    // Effects
+                    serverLevel.sendParticles(net.minecraft.core.particles.ParticleTypes.TOTEM_OF_UNDYING,
+                            player.getX(), player.getY() + 1, player.getZ(), 50, 1, 2, 1, 0.3);
+                    serverLevel.playSound(null, player.blockPosition(),
+                            SoundEvents.UI_TOAST_CHALLENGE_COMPLETE, SoundSource.PLAYERS, 1.5f, 1.0f);
+                }
+            });
+        }
+
+        // Alastor kill tracking for Shadow Milk domain
+        if (!(killed instanceof Player)) {
+            player.getCapability(PlayerElementProvider.PLAYER_ELEMENT).ifPresent(data -> {
+                if (data.getElement() == ElementType.DEMON && data.isAlastor()) {
+                    com.noxgg.elementalpower.world.ShadowMilkDomainManager.onAlastorKill(player, serverLevel, killed.blockPosition());
+                }
+            });
+        }
 
         // Stop Megalovania when a mob (not a player) is killed
         if (!(killed instanceof Player)) {
