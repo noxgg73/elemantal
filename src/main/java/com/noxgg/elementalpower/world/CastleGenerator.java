@@ -405,6 +405,11 @@ public class CastleGenerator {
      * Spawn Raccoon, the Siamese Cat God, sitting on the throne.
      */
     private static void spawnRaccoon(ServerLevel level, BlockPos center, int keepSize, int groundY) {
+        // Place cushion next to the throne (right side)
+        BlockPos cushionPos = center.offset(2, 0, -keepSize + 3).atY(groundY + 5);
+        level.setBlock(cushionPos, Blocks.YELLOW_WOOL.defaultBlockState(), 2);
+        level.setBlock(cushionPos.above(), Blocks.YELLOW_CARPET.defaultBlockState(), 2);
+
         net.minecraft.world.entity.animal.Cat cat = EntityType.CAT.create(level);
         if (cat != null) {
             // Position on the throne
@@ -422,6 +427,10 @@ public class CastleGenerator {
                     .withStyle(net.minecraft.ChatFormatting.GOLD, net.minecraft.ChatFormatting.BOLD));
             cat.setCustomNameVisible(true);
 
+            // Crown (golden helmet)
+            cat.setItemSlot(net.minecraft.world.entity.EquipmentSlot.HEAD,
+                    new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.GOLDEN_HELMET));
+
             // Make invulnerable, sitting, tamed
             cat.setInvulnerable(true);
             cat.setOrderedToSit(true);
@@ -434,8 +443,10 @@ public class CastleGenerator {
 
             level.addFreshEntity(cat);
 
-            // Register throne room position for proximity detection
-            RaccoonManager.registerThroneRoom(level.dimension(), center.offset(0, 0, -keepSize + 3).atY(groundY + 5));
+            // Register throne room position + cushion position for proximity detection
+            RaccoonManager.registerThroneRoom(level.dimension(),
+                    center.offset(0, 0, -keepSize + 3).atY(groundY + 5),
+                    cushionPos);
         }
     }
 
