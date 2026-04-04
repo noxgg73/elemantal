@@ -38,6 +38,12 @@ public class DarkPrisonC2SPacket {
             player.getCapability(PlayerElementProvider.PLAYER_ELEMENT).ifPresent(data -> {
                 ElementType element = data.getElement();
 
+                // Puppeteer override: G key = Cut strings (instant kill all controlled mobs)
+                if (element == ElementType.FIRE && com.noxgg.elementalpower.world.PuppeteerManager.isActive(player.getUUID())) {
+                    com.noxgg.elementalpower.world.PuppeteerManager.cutStrings(player);
+                    return;
+                }
+
                 // Alastor override: G key = Voodoo Symbols
                 if (element == ElementType.DEMON && data.isAlastorModeActive()) {
                     com.noxgg.elementalpower.world.AlastorManager.castVoodooSymbols(player);

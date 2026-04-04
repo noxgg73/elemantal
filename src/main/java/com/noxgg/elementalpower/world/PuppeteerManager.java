@@ -228,6 +228,101 @@ public class PuppeteerManager {
         }
     }
 
+    /**
+     * Cut all puppet strings with giant scissors - instant kill all controlled mobs.
+     * Triggered by pressing G while puppeteer mode is active.
+     */
+    public static void cutStrings(ServerPlayer player) {
+        PuppeteerSession session = activeSessions.get(player.getUUID());
+        if (session == null) return;
+
+        ServerLevel level = session.level;
+        Vec3 playerPos = player.position();
+
+        DustParticleOptions goldDust = new DustParticleOptions(new Vector3f(1.0f, 0.84f, 0.0f), 2.5f);
+        DustParticleOptions silverDust = new DustParticleOptions(new Vector3f(0.8f, 0.8f, 0.9f), 3.0f);
+
+        for (Mob mob : session.controlledMobs) {
+            if (!mob.isAlive()) continue;
+
+            Vec3 stringTop = playerPos.add(0, 2.5, 0);
+            Vec3 mobTop = mob.position().add(0, mob.getBbHeight(), 0);
+
+            // Find the midpoint of the string (where scissors cut)
+            double cutT = 0.5;
+            double cutX = stringTop.x + (mobTop.x - stringTop.x) * cutT;
+            double cutY = stringTop.y + (mobTop.y - stringTop.y) * cutT + Math.sin(cutT * Math.PI) * 1.0;
+            double cutZ = stringTop.z + (mobTop.z - stringTop.z) * cutT;
+
+            // === GIANT SCISSORS PARTICLES ===
+            // Blade 1 (top-left to bottom-right)
+            for (double s = -1.5; s <= 1.5; s += 0.1) {
+                level.sendParticles(silverDust,
+                        cutX + s * 0.7, cutY + s, cutZ + s * 0.3,
+                        1, 0, 0, 0, 0);
+            }
+            // Blade 2 (top-right to bottom-left)
+            for (double s = -1.5; s <= 1.5; s += 0.1) {
+                level.sendParticles(silverDust,
+                        cutX - s * 0.7, cutY + s, cutZ - s * 0.3,
+                        1, 0, 0, 0, 0);
+            }
+            // Pivot point (center of scissors)
+            level.sendParticles(goldDust, cutX, cutY, cutZ, 5, 0.1, 0.1, 0.1, 0);
+
+            // === GOLDEN STRING SNAPPING EFFECT ===
+            // String from player to cut point (snapping upward)
+            for (double t = 0; t < cutT; t += 0.05) {
+                double x = stringTop.x + (mobTop.x - stringTop.x) * t;
+                double y = stringTop.y + (mobTop.y - stringTop.y) * t + Math.sin(t * Math.PI) * 1.0;
+                double z = stringTop.z + (mobTop.z - stringTop.z) * t;
+                level.sendParticles(goldDust, x, y + 0.3, z, 1, 0, 0.1, 0, 0.02);
+            }
+            // String from cut point to mob (falling down)
+            for (double t = cutT; t < 1.0; t += 0.05) {
+                double x = stringTop.x + (mobTop.x - stringTop.x) * t;
+                double y = stringTop.y + (mobTop.y - stringTop.y) * t + Math.sin(t * Math.PI) * 1.0;
+                double z = stringTop.z + (mobTop.z - stringTop.z) * t;
+                level.sendParticles(goldDust, x, y - 0.5, z, 1, 0, -0.1, 0, 0.02);
+            }
+
+            // Spark burst at cut point
+            level.sendParticles(ParticleTypes.ELECTRIC_SPARK,
+                    cutX, cutY, cutZ, 15, 0.3, 0.3, 0.3, 0.15);
+            level.sendParticles(ParticleTypes.CRIT,
+                    cutX, cutY, cutZ, 10, 0.2, 0.2, 0.2, 0.1);
+
+            // === INSTANT KILL ===
+            // Death particles on mob
+            level.sendParticles(ParticleTypes.EXPLOSION,
+                    mob.getX(), mob.getY() + mob.getBbHeight() / 2, mob.getZ(),
+                    3, 0.3, 0.3, 0.3, 0);
+            level.sendParticles(goldDust,
+                    mob.getX(), mob.getY() + mob.getBbHeight(), mob.getZ(),
+                    10, 0.2, 0.5, 0.2, 0.05);
+
+            // Kill the mob instantly
+            mob.hurt(level.damageSources().magic(), Float.MAX_VALUE);
+            if (mob.isAlive()) {
+                mob.kill(); // Force kill if somehow survived
+            }
+        }
+
+        // Scissor sound effect
+        level.playSound(null, player.blockPosition(), SoundEvents.SHEEP_SHEAR, SoundSource.PLAYERS, 2.0f, 0.5f);
+        level.playSound(null, player.blockPosition(), SoundEvents.PLAYER_ATTACK_SWEEP, SoundSource.PLAYERS, 1.5f, 1.2f);
+        level.playSound(null, player.blockPosition(), SoundEvents.CHAIN_BREAK, SoundSource.PLAYERS, 1.5f, 1.0f);
+
+        // Message
+        player.sendSystemMessage(Component.literal("")
+                .append(Component.literal(">> ").withStyle(ChatFormatting.GOLD))
+                .append(Component.literal("*SNIP* ").withStyle(ChatFormatting.WHITE, ChatFormatting.BOLD))
+                .append(Component.literal("Les fils sont coupes! Mort instantanee!").withStyle(ChatFormatting.RED, ChatFormatting.BOLD)));
+
+        // End session
+        activeSessions.remove(player.getUUID());
+    }
+
     public static void onPlayerLogout(UUID playerId) {
         deactivate(playerId);
     }
