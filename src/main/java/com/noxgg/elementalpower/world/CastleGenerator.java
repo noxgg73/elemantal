@@ -396,6 +396,47 @@ public class CastleGenerator {
                 level.setBlock(center.offset(5, 0, z).atY(groundY + y), GOLD_BLOCK, 2);
             }
         }
+
+        // Spawn Raccoon - the Siamese Cat God - on the throne
+        spawnRaccoon(level, center, keepSize, groundY);
+    }
+
+    /**
+     * Spawn Raccoon, the Siamese Cat God, sitting on the throne.
+     */
+    private static void spawnRaccoon(ServerLevel level, BlockPos center, int keepSize, int groundY) {
+        net.minecraft.world.entity.animal.Cat cat = EntityType.CAT.create(level);
+        if (cat != null) {
+            // Position on the throne
+            double throneX = center.getX() + 0.5;
+            double throneY = groundY + 5.5;
+            double throneZ = center.getZ() - keepSize + 3 + 0.5;
+            cat.moveTo(throneX, throneY, throneZ, 180, 0);
+
+            // Siamese variant
+            net.minecraft.core.registries.BuiltInRegistries.CAT_VARIANT.getOptional(
+                    net.minecraft.resources.ResourceLocation.tryParse("siamese")).ifPresent(cat::setVariant);
+
+            // Custom name: Raccoon
+            cat.setCustomName(net.minecraft.network.chat.Component.literal("Raccoon, Dieu des Chats")
+                    .withStyle(net.minecraft.ChatFormatting.GOLD, net.minecraft.ChatFormatting.BOLD));
+            cat.setCustomNameVisible(true);
+
+            // Make invulnerable, sitting, tamed
+            cat.setInvulnerable(true);
+            cat.setOrderedToSit(true);
+            cat.setNoAi(true);
+            cat.setSilent(true);
+            cat.setPersistenceRequired();
+
+            // Add tag for identification
+            cat.addTag("raccoon_cat_god");
+
+            level.addFreshEntity(cat);
+
+            // Register throne room position for proximity detection
+            RaccoonManager.registerThroneRoom(level.dimension(), center.offset(0, 0, -keepSize + 3).atY(groundY + 5));
+        }
     }
 
     /**

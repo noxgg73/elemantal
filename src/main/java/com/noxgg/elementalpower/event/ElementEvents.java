@@ -189,6 +189,7 @@ public class ElementEvents {
         CombatMusicManager.onPlayerLogout(event.getEntity().getUUID());
         UndertaleBattleManager.onPlayerLogout(event.getEntity().getUUID());
         com.noxgg.elementalpower.world.ShadowFormManager.onPlayerLogout(event.getEntity().getUUID());
+        com.noxgg.elementalpower.world.RaccoonManager.onPlayerLogout(event.getEntity().getUUID());
     }
 
     // === SOUL ABSORPTION ON MOB KILL ===
