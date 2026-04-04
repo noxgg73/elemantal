@@ -47,7 +47,7 @@ public enum ElementType {
             case POISON -> "Maitrise du poison. Empoisonne les ennemis, immunite au poison.";
             case DARKNESS -> "Maitrise des tenebres. Invisibilite, aveuglement des ennemis.";
             case LIGHT -> "Maitrise de la lumiere. Regeneration, degats aux morts-vivants.";
-            case DEMON -> "Puissance demoniaque. Force surhumaine, aura de feu.";
+            case DEMON -> "Puissance demoniaque. Force surhumaine, aura de feu. A la mort, reincarnation en Alastor avec 3 sorts!";
             case NATURE -> "Maitrise de la nature. Regeneration rapide, epines.";
             case LIGHTNING -> "Maitrise de la foudre. Invoque la foudre, vitesse eclair.";
             case ROYAL -> "Pouvoir royal. Force, resistance, aura doree, couronne de puissance.";
