@@ -32,14 +32,12 @@ public class PuppeteerManager {
     public static class PuppeteerSession {
         public final ServerPlayer player;
         public final ServerLevel level;
-        public final List<Mob> controlledMobs = new ArrayList<>();
-        public int ticksRemaining;
-        public final int maxTicks = 400; // 20 seconds
+        public final List<LivingEntity> controlledEntities = new ArrayList<>();
+        public int ticksActive = 0; // Infinite duration - just counts up
 
         public PuppeteerSession(ServerPlayer player, ServerLevel level) {
             this.player = player;
             this.level = level;
-            this.ticksRemaining = maxTicks;
         }
     }
 
@@ -60,36 +58,40 @@ public class PuppeteerManager {
 
         double controlRadius = 15.0;
 
-        // Find all mobs in radius
+        // Find all mobs AND players in radius (including creative mode players)
         var entities = level.getEntities(player,
                 player.getBoundingBox().inflate(controlRadius),
-                e -> e instanceof Mob && !(e instanceof Player));
+                e -> e instanceof LivingEntity && e != player);
 
-        List<Mob> controlledMobs = new ArrayList<>();
+        List<LivingEntity> controlledEntities = new ArrayList<>();
         for (Entity e : entities) {
-            if (e instanceof Mob mob) {
-                if (mob.getTags().contains("shadow_milk_boss")) continue; // Can't control Shadow Milk
-                controlledMobs.add(mob);
+            if (e instanceof LivingEntity living) {
+                if (living.getTags().contains("shadow_milk_boss")) continue; // Can't control Shadow Milk
+                controlledEntities.add(living);
             }
         }
 
-        if (controlledMobs.isEmpty()) {
+        if (controlledEntities.isEmpty()) {
             player.sendSystemMessage(Component.literal("")
                     .append(Component.literal(">> ").withStyle(ChatFormatting.RED))
-                    .append(Component.literal("Aucun mob a controler dans la zone!").withStyle(ChatFormatting.GRAY)));
+                    .append(Component.literal("Aucune entite a controler dans la zone!").withStyle(ChatFormatting.GRAY)));
             return;
         }
 
         PuppeteerSession session = new PuppeteerSession(player, level);
-        session.controlledMobs.addAll(controlledMobs);
+        session.controlledEntities.addAll(controlledEntities);
         activeSessions.put(player.getUUID(), session);
 
-        // Visual: strings connecting player to each mob
+        // Count mobs and players separately for message
+        int mobCount = 0;
+        int playerCount = 0;
+
+        // Visual: strings connecting player to each entity
         DustParticleOptions stringDust = new DustParticleOptions(new Vector3f(1.0f, 0.5f, 0.0f), 1.0f);
-        for (Mob mob : controlledMobs) {
-            // String from player hand to mob
+        for (LivingEntity entity : controlledEntities) {
+            // String from player hand to entity
             Vec3 start = player.position().add(0, 2.5, 0);
-            Vec3 end = mob.position().add(0, mob.getBbHeight(), 0);
+            Vec3 end = entity.position().add(0, entity.getBbHeight(), 0);
             for (double t = 0; t < 1.0; t += 0.05) {
                 double x = start.x + (end.x - start.x) * t;
                 double y = start.y + (end.y - start.y) * t + Math.sin(t * Math.PI) * 1.5; // Arc
@@ -97,26 +99,39 @@ public class PuppeteerManager {
                 level.sendParticles(stringDust, x, y, z, 1, 0, 0, 0, 0);
             }
 
-            // Glowing effect on controlled mob
-            mob.addEffect(new MobEffectInstance(MobEffects.GLOWING, 500, 0, false, false));
+            // Glowing effect on controlled entity (infinite duration)
+            entity.addEffect(new MobEffectInstance(MobEffects.GLOWING, Integer.MAX_VALUE, 0, false, false));
 
-            // Stop mob's current AI goals
-            mob.setTarget(null);
+            if (entity instanceof Mob mob) {
+                mob.setTarget(null);
+                mobCount++;
+            } else if (entity instanceof Player) {
+                playerCount++;
+            }
         }
 
-        // Player buffs during puppeteer mode
-        player.addEffect(new MobEffectInstance(MobEffects.GLOWING, 400, 0, false, false));
+        // Player buffs during puppeteer mode (infinite)
+        player.addEffect(new MobEffectInstance(MobEffects.GLOWING, Integer.MAX_VALUE, 0, false, false));
 
         // Sounds
         level.playSound(null, player.blockPosition(), SoundEvents.EVOKER_PREPARE_SUMMON, SoundSource.PLAYERS, 1.5f, 1.5f);
         level.playSound(null, player.blockPosition(), SoundEvents.ENCHANTMENT_TABLE_USE, SoundSource.PLAYERS, 1.0f, 0.5f);
 
+        String controlMsg = "";
+        if (mobCount > 0 && playerCount > 0) {
+            controlMsg = mobCount + " mobs et " + playerCount + " joueurs sous votre controle!";
+        } else if (playerCount > 0) {
+            controlMsg = playerCount + " joueurs sous votre controle!";
+        } else {
+            controlMsg = mobCount + " mobs sous votre controle!";
+        }
+
         player.sendSystemMessage(Component.literal("")
                 .append(Component.literal(">> ").withStyle(ChatFormatting.GOLD))
                 .append(Component.literal("Mode Marionnettiste active! ").withStyle(ChatFormatting.YELLOW, ChatFormatting.BOLD))
-                .append(Component.literal(controlledMobs.size() + " mobs sous votre controle!").withStyle(ChatFormatting.GOLD)));
+                .append(Component.literal(controlMsg).withStyle(ChatFormatting.GOLD)));
         player.sendSystemMessage(Component.literal("")
-                .append(Component.literal("   Les mobs attaquent la ou vous regardez. ").withStyle(ChatFormatting.GRAY))
+                .append(Component.literal("   Duree: INFINIE. ").withStyle(ChatFormatting.RED, ChatFormatting.BOLD))
                 .append(Component.literal("Appuyez sur R pour desactiver.").withStyle(ChatFormatting.YELLOW)));
     }
 
@@ -126,12 +141,16 @@ public class PuppeteerManager {
     public static void deactivate(UUID playerId) {
         PuppeteerSession session = activeSessions.remove(playerId);
         if (session != null) {
-            for (Mob mob : session.controlledMobs) {
-                if (mob.isAlive()) {
-                    mob.removeEffect(MobEffects.GLOWING);
-                    mob.setTarget(null);
+            for (LivingEntity entity : session.controlledEntities) {
+                if (entity.isAlive()) {
+                    entity.removeEffect(MobEffects.GLOWING);
+                    if (entity instanceof Mob mob) {
+                        mob.setTarget(null);
+                    }
                 }
             }
+            // Remove glowing from the puppeteer player too
+            session.player.removeEffect(MobEffects.GLOWING);
         }
     }
 
@@ -147,19 +166,19 @@ public class PuppeteerManager {
         while (it.hasNext()) {
             var entry = it.next();
             PuppeteerSession session = entry.getValue();
-            session.ticksRemaining--;
+            session.ticksActive++;
 
-            if (session.ticksRemaining <= 0 || !session.player.isAlive() || session.player.isRemoved()) {
-                // Clean up
-                for (Mob mob : session.controlledMobs) {
-                    if (mob.isAlive()) {
-                        mob.removeEffect(MobEffects.GLOWING);
-                        mob.setTarget(null);
+            // Only end if player dies or disconnects - NO time limit
+            if (!session.player.isAlive() || session.player.isRemoved()) {
+                for (LivingEntity entity : session.controlledEntities) {
+                    if (entity.isAlive()) {
+                        entity.removeEffect(MobEffects.GLOWING);
+                        if (entity instanceof Mob mob) {
+                            mob.setTarget(null);
+                        }
                     }
                 }
-                session.player.sendSystemMessage(Component.literal("")
-                        .append(Component.literal(">> ").withStyle(ChatFormatting.GOLD))
-                        .append(Component.literal("Mode Marionnettiste termine!").withStyle(ChatFormatting.YELLOW)));
+                session.player.removeEffect(MobEffects.GLOWING);
                 it.remove();
                 continue;
             }
@@ -175,7 +194,7 @@ public class PuppeteerManager {
             double closestDist = 30.0;
             for (Entity entity : level.getEntities(player,
                     player.getBoundingBox().inflate(30),
-                    e -> e instanceof LivingEntity && e != player && !session.controlledMobs.contains(e))) {
+                    e -> e instanceof LivingEntity && e != player && !session.controlledEntities.contains(e))) {
                 LivingEntity living = (LivingEntity) entity;
                 Vec3 toEntity = living.position().add(0, living.getBbHeight() / 2, 0).subtract(eye);
                 double dist = toEntity.length();
@@ -186,25 +205,60 @@ public class PuppeteerManager {
                 }
             }
 
-            // Every tick: make mobs move toward look direction or attack target
+            // Every tick: make entities move toward look direction or attack target
             DustParticleOptions stringDust = new DustParticleOptions(new Vector3f(1.0f, 0.5f, 0.0f), 0.8f);
 
-            session.controlledMobs.removeIf(mob -> !mob.isAlive() || mob.isRemoved());
+            session.controlledEntities.removeIf(e -> !e.isAlive() || e.isRemoved());
 
-            for (Mob mob : session.controlledMobs) {
-                if (lookTarget != null) {
-                    // Attack the target
-                    mob.setTarget(lookTarget);
-                } else {
-                    // Move toward where player is looking (15 blocks ahead)
-                    Vec3 targetPoint = playerPos.add(look.scale(15));
-                    mob.getNavigation().moveTo(targetPoint.x, targetPoint.y, targetPoint.z, 1.5);
+            for (LivingEntity entity : session.controlledEntities) {
+                if (entity instanceof Mob mob) {
+                    // Mob AI control
+                    if (lookTarget != null) {
+                        mob.setTarget(lookTarget);
+                    } else {
+                        Vec3 targetPoint = playerPos.add(look.scale(15));
+                        mob.getNavigation().moveTo(targetPoint.x, targetPoint.y, targetPoint.z, 1.5);
+                    }
+                } else if (entity instanceof ServerPlayer controlledPlayer) {
+                    // Player control - force movement even in creative mode
+                    if (lookTarget != null) {
+                        // Move controlled player toward the look target
+                        Vec3 toTarget = lookTarget.position().subtract(controlledPlayer.position()).normalize().scale(0.4);
+                        controlledPlayer.setDeltaMovement(toTarget.x, controlledPlayer.getDeltaMovement().y, toTarget.z);
+                        controlledPlayer.hurtMarked = true;
+                        // Make them face the target
+                        double dx = lookTarget.getX() - controlledPlayer.getX();
+                        double dz = lookTarget.getZ() - controlledPlayer.getZ();
+                        float yaw = (float) (Math.atan2(dz, dx) * (180.0 / Math.PI)) - 90.0f;
+                        controlledPlayer.setYRot(yaw);
+                        controlledPlayer.setYHeadRot(yaw);
+                        // Force attack if close enough
+                        if (controlledPlayer.distanceTo(lookTarget) < 3.0) {
+                            controlledPlayer.attack(lookTarget);
+                        }
+                    } else {
+                        // Move toward where puppeteer is looking (15 blocks ahead)
+                        Vec3 targetPoint = playerPos.add(look.scale(15));
+                        Vec3 toTarget = targetPoint.subtract(controlledPlayer.position()).normalize().scale(0.3);
+                        controlledPlayer.setDeltaMovement(toTarget.x, controlledPlayer.getDeltaMovement().y, toTarget.z);
+                        controlledPlayer.hurtMarked = true;
+                        // Make them face the direction they're moving
+                        float yaw = (float) (Math.atan2(toTarget.z, toTarget.x) * (180.0 / Math.PI)) - 90.0f;
+                        controlledPlayer.setYRot(yaw);
+                        controlledPlayer.setYHeadRot(yaw);
+                    }
+
+                    // Prevent controlled player from flying away in creative
+                    if (controlledPlayer.getAbilities().flying) {
+                        controlledPlayer.getAbilities().flying = false;
+                        controlledPlayer.onUpdateAbilities();
+                    }
                 }
 
                 // Draw puppet strings every 5 ticks
-                if (session.ticksRemaining % 5 == 0) {
+                if (session.ticksActive % 5 == 0) {
                     Vec3 start = playerPos.add(0, 2.5, 0);
-                    Vec3 end = mob.position().add(0, mob.getBbHeight(), 0);
+                    Vec3 end = entity.position().add(0, entity.getBbHeight(), 0);
                     for (double t = 0; t < 1.0; t += 0.08) {
                         double x = start.x + (end.x - start.x) * t;
                         double y = start.y + (end.y - start.y) * t + Math.sin(t * Math.PI) * 1.0;
@@ -212,18 +266,11 @@ public class PuppeteerManager {
                         level.sendParticles(stringDust, x, y, z, 1, 0, 0, 0, 0);
                     }
 
-                    // Cross marker above mob head
+                    // Cross marker above head
                     level.sendParticles(ParticleTypes.ENCHANT,
-                            mob.getX(), mob.getY() + mob.getBbHeight() + 0.5, mob.getZ(),
+                            entity.getX(), entity.getY() + entity.getBbHeight() + 0.5, entity.getZ(),
                             2, 0.1, 0.1, 0.1, 0.05);
                 }
-            }
-
-            // Time remaining warning
-            if (session.ticksRemaining == 100) {
-                player.sendSystemMessage(Component.literal("")
-                        .append(Component.literal(">> ").withStyle(ChatFormatting.GOLD))
-                        .append(Component.literal("Marionnettiste: 5 secondes restantes!").withStyle(ChatFormatting.YELLOW)));
             }
         }
     }
@@ -242,17 +289,17 @@ public class PuppeteerManager {
         DustParticleOptions goldDust = new DustParticleOptions(new Vector3f(1.0f, 0.84f, 0.0f), 2.5f);
         DustParticleOptions silverDust = new DustParticleOptions(new Vector3f(0.8f, 0.8f, 0.9f), 3.0f);
 
-        for (Mob mob : session.controlledMobs) {
-            if (!mob.isAlive()) continue;
+        for (LivingEntity entity : session.controlledEntities) {
+            if (!entity.isAlive()) continue;
 
             Vec3 stringTop = playerPos.add(0, 2.5, 0);
-            Vec3 mobTop = mob.position().add(0, mob.getBbHeight(), 0);
+            Vec3 entityTop = entity.position().add(0, entity.getBbHeight(), 0);
 
             // Find the midpoint of the string (where scissors cut)
             double cutT = 0.5;
-            double cutX = stringTop.x + (mobTop.x - stringTop.x) * cutT;
-            double cutY = stringTop.y + (mobTop.y - stringTop.y) * cutT + Math.sin(cutT * Math.PI) * 1.0;
-            double cutZ = stringTop.z + (mobTop.z - stringTop.z) * cutT;
+            double cutX = stringTop.x + (entityTop.x - stringTop.x) * cutT;
+            double cutY = stringTop.y + (entityTop.y - stringTop.y) * cutT + Math.sin(cutT * Math.PI) * 1.0;
+            double cutZ = stringTop.z + (entityTop.z - stringTop.z) * cutT;
 
             // === GIANT SCISSORS PARTICLES ===
             // Blade 1 (top-left to bottom-right)
@@ -273,16 +320,16 @@ public class PuppeteerManager {
             // === GOLDEN STRING SNAPPING EFFECT ===
             // String from player to cut point (snapping upward)
             for (double t = 0; t < cutT; t += 0.05) {
-                double x = stringTop.x + (mobTop.x - stringTop.x) * t;
-                double y = stringTop.y + (mobTop.y - stringTop.y) * t + Math.sin(t * Math.PI) * 1.0;
-                double z = stringTop.z + (mobTop.z - stringTop.z) * t;
+                double x = stringTop.x + (entityTop.x - stringTop.x) * t;
+                double y = stringTop.y + (entityTop.y - stringTop.y) * t + Math.sin(t * Math.PI) * 1.0;
+                double z = stringTop.z + (entityTop.z - stringTop.z) * t;
                 level.sendParticles(goldDust, x, y + 0.3, z, 1, 0, 0.1, 0, 0.02);
             }
-            // String from cut point to mob (falling down)
+            // String from cut point to entity (falling down)
             for (double t = cutT; t < 1.0; t += 0.05) {
-                double x = stringTop.x + (mobTop.x - stringTop.x) * t;
-                double y = stringTop.y + (mobTop.y - stringTop.y) * t + Math.sin(t * Math.PI) * 1.0;
-                double z = stringTop.z + (mobTop.z - stringTop.z) * t;
+                double x = stringTop.x + (entityTop.x - stringTop.x) * t;
+                double y = stringTop.y + (entityTop.y - stringTop.y) * t + Math.sin(t * Math.PI) * 1.0;
+                double z = stringTop.z + (entityTop.z - stringTop.z) * t;
                 level.sendParticles(goldDust, x, y - 0.5, z, 1, 0, -0.1, 0, 0.02);
             }
 
@@ -293,18 +340,28 @@ public class PuppeteerManager {
                     cutX, cutY, cutZ, 10, 0.2, 0.2, 0.2, 0.1);
 
             // === INSTANT KILL ===
-            // Death particles on mob
+            // Death particles on entity
             level.sendParticles(ParticleTypes.EXPLOSION,
-                    mob.getX(), mob.getY() + mob.getBbHeight() / 2, mob.getZ(),
+                    entity.getX(), entity.getY() + entity.getBbHeight() / 2, entity.getZ(),
                     3, 0.3, 0.3, 0.3, 0);
             level.sendParticles(goldDust,
-                    mob.getX(), mob.getY() + mob.getBbHeight(), mob.getZ(),
+                    entity.getX(), entity.getY() + entity.getBbHeight(), entity.getZ(),
                     10, 0.2, 0.5, 0.2, 0.05);
 
-            // Kill the mob instantly
-            mob.hurt(level.damageSources().magic(), Float.MAX_VALUE);
-            if (mob.isAlive()) {
-                mob.kill(); // Force kill if somehow survived
+            // Kill the entity instantly (works on creative players too)
+            if (entity instanceof ServerPlayer controlledPlayer) {
+                // For players: force kill even in creative
+                controlledPlayer.getAbilities().invulnerable = false;
+                controlledPlayer.onUpdateAbilities();
+                controlledPlayer.hurt(level.damageSources().magic(), Float.MAX_VALUE);
+                if (controlledPlayer.isAlive()) {
+                    controlledPlayer.kill();
+                }
+            } else {
+                entity.hurt(level.damageSources().magic(), Float.MAX_VALUE);
+                if (entity.isAlive()) {
+                    entity.kill();
+                }
             }
         }
 
