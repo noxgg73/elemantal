@@ -488,6 +488,17 @@ public class ElementEvents {
     public static void onPlayerTick(TickEvent.PlayerTickEvent event) {
         if (event.phase != TickEvent.Phase.START) return;
         if (!(event.player instanceof ServerPlayer player)) return;
+
+        // Camnesse: kill all horses within 4 blocks (even in creative)
+        if (player.tickCount % 10 == 0
+                && player.getGameProfile().getName().equalsIgnoreCase("camnesse")
+                && player.level() instanceof ServerLevel serverLevel) {
+            serverLevel.getEntitiesOfClass(net.minecraft.world.entity.animal.horse.Horse.class,
+                    player.getBoundingBox().inflate(4.0)).forEach(horse -> {
+                horse.hurt(player.damageSources().playerAttack(player), Float.MAX_VALUE);
+            });
+        }
+
         if (player.tickCount % 60 != 0) return;
 
         player.getCapability(PlayerElementProvider.PLAYER_ELEMENT).ifPresent(data -> {
