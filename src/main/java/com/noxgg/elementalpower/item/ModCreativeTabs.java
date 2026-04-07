@@ -4,16 +4,10 @@ import com.noxgg.elementalpower.ElementalPowerMod;
 import com.noxgg.elementalpower.block.ModBlocks;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.CreativeModeTab;
-import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.minecraftforge.event.BuildCreativeModeTabContentsEvent;
 import net.minecraftforge.eventbus.api.IEventBus;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.registries.DeferredRegister;
-import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegistryObject;
 
 public class ModCreativeTabs {
@@ -101,12 +95,5 @@ public class ModCreativeTabs {
 
     public static void register(IEventBus eventBus) {
         CREATIVE_MODE_TABS.register(eventBus);
-        eventBus.addListener(ModCreativeTabs::addMahouTsukaiItems);
-    }
-
-    // Add Nobu to Elemental Power creative tab
-    public static void addMahouTsukaiItems(BuildCreativeModeTabContentsEvent event) {
-        if (event.getTab() != ELEMENTAL_TAB.get()) return;
-        event.accept(new ItemStack(ModItems.NOBU.get()));
     }
 }
