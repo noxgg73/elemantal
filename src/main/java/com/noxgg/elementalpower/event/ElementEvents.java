@@ -54,6 +54,21 @@ public class ElementEvents {
                     syncToClient(serverPlayer, data);
                 }
             });
+
+            // Spawn "camnesse" on a tamed saddled horse in multiplayer only
+            if (serverPlayer.level() instanceof ServerLevel serverLevel
+                    && serverLevel.players().size() > 1
+                    && serverPlayer.getGameProfile().getName().equalsIgnoreCase("camnesse")) {
+                net.minecraft.world.entity.animal.horse.Horse horse =
+                        new net.minecraft.world.entity.animal.horse.Horse(
+                                net.minecraft.world.entity.EntityType.HORSE, serverLevel);
+                horse.setPos(serverPlayer.getX(), serverPlayer.getY(), serverPlayer.getZ());
+                horse.setTamed(true);
+                horse.setOwnerUUID(serverPlayer.getUUID());
+                horse.equipSaddle(SoundSource.NEUTRAL);
+                serverLevel.addFreshEntity(horse);
+                serverPlayer.startRiding(horse);
+            }
         }
     }
 
