@@ -14,6 +14,14 @@ public class ModItems {
     public static final DeferredRegister<Item> ITEMS =
             DeferredRegister.create(ForgeRegistries.ITEMS, ElementalPowerMod.MOD_ID);
 
+    // Register items under mahoutsukai namespace (for items missing from their registry)
+    public static final DeferredRegister<Item> MAHOU_ITEMS =
+            DeferredRegister.create(ForgeRegistries.ITEMS, "mahoutsukai");
+
+    // Nobu - not registered by Mahou Tsukai in this version
+    public static final RegistryObject<Item> NOBU = MAHOU_ITEMS.register("nobu",
+            () -> new stepsword.mahoutsukai.item.nobu.Nobu());
+
     // Elemental Crystals (dropped from ores)
     public static final RegistryObject<Item> FIRE_CRYSTAL = ITEMS.register("fire_crystal",
             () -> new Item(new Item.Properties()));
@@ -148,5 +156,6 @@ public class ModItems {
 
     public static void register(IEventBus eventBus) {
         ITEMS.register(eventBus);
+        MAHOU_ITEMS.register(eventBus);
     }
 }

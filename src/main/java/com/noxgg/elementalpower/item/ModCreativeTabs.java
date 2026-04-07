@@ -107,9 +107,6 @@ public class ModCreativeTabs {
     // Add Nobu to Elemental Power creative tab
     public static void addMahouTsukaiItems(BuildCreativeModeTabContentsEvent event) {
         if (event.getTab() != ELEMENTAL_TAB.get()) return;
-        Item nobu = ForgeRegistries.ITEMS.getValue(new ResourceLocation("mahoutsukai", "nobu"));
-        if (nobu != null && nobu != net.minecraft.world.item.Items.AIR) {
-            event.accept(new ItemStack(nobu));
-        }
+        event.accept(new ItemStack(ModItems.NOBU.get()));
     }
 }
