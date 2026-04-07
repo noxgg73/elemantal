@@ -104,12 +104,12 @@ public class ModCreativeTabs {
         eventBus.addListener(ModCreativeTabs::addMahouTsukaiItems);
     }
 
-    // Add Nobu to the Mahou Tsukai creative tab
+    // Add Nobu to Elemental Power creative tab
     public static void addMahouTsukaiItems(BuildCreativeModeTabContentsEvent event) {
-        // Add to Mahou Tsukai tab
+        if (event.getTab() != ELEMENTAL_TAB.get()) return;
         Item nobu = ForgeRegistries.ITEMS.getValue(new ResourceLocation("mahoutsukai", "nobu"));
-        if (nobu != null && event.getTab() == ELEMENTAL_TAB.get()) {
-            event.accept(nobu);
+        if (nobu != null && nobu != net.minecraft.world.item.Items.AIR) {
+            event.accept(new ItemStack(nobu));
         }
     }
 }
