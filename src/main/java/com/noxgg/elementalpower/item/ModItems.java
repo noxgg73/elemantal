@@ -135,6 +135,13 @@ public class ModItems {
                 public boolean isFoil(net.minecraft.world.item.ItemStack stack) { return true; }
             });
 
+    // Soul Stone (dropped by Pure Vanilla, given to Shadow Milk for Puppeteer power)
+    public static final RegistryObject<Item> SOUL_STONE = ITEMS.register("soul_stone",
+            () -> new Item(new Item.Properties().stacksTo(1).rarity(net.minecraft.world.item.Rarity.EPIC)) {
+                @Override
+                public boolean isFoil(net.minecraft.world.item.ItemStack stack) { return true; }
+            });
+
     // Element Reset Pearl
     public static final RegistryObject<Item> ELEMENT_RESET_PEARL = ITEMS.register("element_reset_pearl",
             () -> new ElementResetPearlItem(new Item.Properties().stacksTo(1).rarity(net.minecraft.world.item.Rarity.EPIC)));

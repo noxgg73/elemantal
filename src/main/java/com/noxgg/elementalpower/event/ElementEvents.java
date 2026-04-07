@@ -147,6 +147,102 @@ public class ElementEvents {
         }
     }
 
+    // === SHADOW MILK: Right-click with Soul Stone to unlock Puppeteer ===
+    @SubscribeEvent
+    public static void onInteractWithShadowMilk(net.minecraftforge.event.entity.player.PlayerInteractEvent.EntityInteract event) {
+        if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        if (!(event.getTarget() instanceof LivingEntity target)) return;
+        if (!target.getTags().contains("shadow_milk_boss")) return;
+        if (!(player.level() instanceof ServerLevel serverLevel)) return;
+
+        // Check if holding Soul Stone
+        net.minecraft.world.item.ItemStack heldItem = player.getMainHandItem();
+        if (!heldItem.is(com.noxgg.elementalpower.item.ModItems.SOUL_STONE.get())) {
+            // Shadow Milk speaks if no soul stone
+            player.sendSystemMessage(Component.literal("")
+                    .append(Component.literal("   Shadow Milk").withStyle(ChatFormatting.DARK_PURPLE, ChatFormatting.BOLD))
+                    .append(Component.literal(" *ricane*").withStyle(ChatFormatting.LIGHT_PURPLE, ChatFormatting.ITALIC)));
+            player.sendSystemMessage(Component.literal("")
+                    .append(Component.literal("   << ").withStyle(ChatFormatting.DARK_PURPLE))
+                    .append(Component.literal("Tu n'as rien d'interessant pour moi... Reviens avec une Pierre d'Ame.").withStyle(ChatFormatting.LIGHT_PURPLE))
+                    .append(Component.literal(" >>").withStyle(ChatFormatting.DARK_PURPLE)));
+            return;
+        }
+
+        player.getCapability(PlayerElementProvider.PLAYER_ELEMENT).ifPresent(data -> {
+            if (data.getElement() != ElementType.FIRE) {
+                player.sendSystemMessage(Component.literal("")
+                        .append(Component.literal("   Shadow Milk").withStyle(ChatFormatting.DARK_PURPLE, ChatFormatting.BOLD))
+                        .append(Component.literal(" *observe*").withStyle(ChatFormatting.LIGHT_PURPLE, ChatFormatting.ITALIC)));
+                player.sendSystemMessage(Component.literal("")
+                        .append(Component.literal("   << ").withStyle(ChatFormatting.DARK_PURPLE))
+                        .append(Component.literal("Seul un maitre du Feu peut manier ce pouvoir...").withStyle(ChatFormatting.LIGHT_PURPLE))
+                        .append(Component.literal(" >>").withStyle(ChatFormatting.DARK_PURPLE)));
+                return;
+            }
+
+            if (data.hasPuppeteerPower()) {
+                player.sendSystemMessage(Component.literal("")
+                        .append(Component.literal("   Shadow Milk").withStyle(ChatFormatting.DARK_PURPLE, ChatFormatting.BOLD))
+                        .append(Component.literal(" *sourit*").withStyle(ChatFormatting.LIGHT_PURPLE, ChatFormatting.ITALIC)));
+                player.sendSystemMessage(Component.literal("")
+                        .append(Component.literal("   << ").withStyle(ChatFormatting.DARK_PURPLE))
+                        .append(Component.literal("Tu possedes deja ce pouvoir. Va jouer avec tes marionnettes.").withStyle(ChatFormatting.LIGHT_PURPLE))
+                        .append(Component.literal(" >>").withStyle(ChatFormatting.DARK_PURPLE)));
+                return;
+            }
+
+            // Consume soul stone and grant power
+            heldItem.shrink(1);
+            data.setPuppeteerPower(true);
+            syncToClient(player, data);
+
+            // Shadow Milk's dialogue
+            player.sendSystemMessage(Component.literal(""));
+            player.sendSystemMessage(Component.literal("")
+                    .append(Component.literal("   Shadow Milk").withStyle(ChatFormatting.DARK_PURPLE, ChatFormatting.BOLD))
+                    .append(Component.literal(" *prend la Pierre d'Ame*").withStyle(ChatFormatting.LIGHT_PURPLE, ChatFormatting.ITALIC)));
+            player.sendSystemMessage(Component.literal(""));
+            player.sendSystemMessage(Component.literal("")
+                    .append(Component.literal("   << ").withStyle(ChatFormatting.DARK_PURPLE))
+                    .append(Component.literal("Ahhh... L'ame de Pure Vanilla. Delicieux.").withStyle(ChatFormatting.LIGHT_PURPLE))
+                    .append(Component.literal(" >>").withStyle(ChatFormatting.DARK_PURPLE)));
+            player.sendSystemMessage(Component.literal("")
+                    .append(Component.literal("   << ").withStyle(ChatFormatting.DARK_PURPLE))
+                    .append(Component.literal("En echange, je t'offre le pouvoir de controler les etres vivants...").withStyle(ChatFormatting.LIGHT_PURPLE))
+                    .append(Component.literal(" >>").withStyle(ChatFormatting.DARK_PURPLE)));
+            player.sendSystemMessage(Component.literal(""));
+            player.sendSystemMessage(Component.literal("")
+                    .append(Component.literal(">> NOUVEAU POUVOIR DEBLOQUE: ").withStyle(ChatFormatting.GOLD, ChatFormatting.BOLD))
+                    .append(Component.literal("MARIONNETTISTE!").withStyle(ChatFormatting.YELLOW, ChatFormatting.BOLD)));
+            player.sendSystemMessage(Component.literal("")
+                    .append(Component.literal("   Appuyez sur ").withStyle(ChatFormatting.GRAY))
+                    .append(Component.literal("R").withStyle(ChatFormatting.YELLOW, ChatFormatting.BOLD))
+                    .append(Component.literal(" pour controler les mobs | ").withStyle(ChatFormatting.GRAY))
+                    .append(Component.literal("G").withStyle(ChatFormatting.YELLOW, ChatFormatting.BOLD))
+                    .append(Component.literal(" pour couper les fils!").withStyle(ChatFormatting.GRAY)));
+            player.sendSystemMessage(Component.literal(""));
+
+            // Effects
+            var purpleDust = new net.minecraft.core.particles.DustParticleOptions(
+                    new org.joml.Vector3f(0.5f, 0.0f, 0.8f), 3.0f);
+            for (int i = 0; i < 50; i++) {
+                double ox = (serverLevel.random.nextDouble() - 0.5) * 4;
+                double oy = serverLevel.random.nextDouble() * 3;
+                double oz = (serverLevel.random.nextDouble() - 0.5) * 4;
+                serverLevel.sendParticles(purpleDust,
+                        target.getX() + ox, target.getY() + oy, target.getZ() + oz,
+                        1, 0, 0.05, 0, 0);
+            }
+            serverLevel.sendParticles(net.minecraft.core.particles.ParticleTypes.TOTEM_OF_UNDYING,
+                    player.getX(), player.getY() + 1, player.getZ(), 50, 1, 2, 1, 0.3);
+            serverLevel.playSound(null, player.blockPosition(),
+                    SoundEvents.UI_TOAST_CHALLENGE_COMPLETE, SoundSource.PLAYERS, 1.5f, 1.0f);
+            serverLevel.playSound(null, target.blockPosition(),
+                    SoundEvents.ENDER_DRAGON_GROWL, SoundSource.HOSTILE, 0.8f, 1.5f);
+        });
+    }
+
     // === UNDERTALE: Intercept attacks to open battle screen ===
     @SubscribeEvent
     public static void onUndertaleAttack(net.minecraftforge.event.entity.player.AttackEntityEvent event) {
@@ -222,36 +318,35 @@ public class ElementEvents {
         if (!(source instanceof ServerPlayer player)) return;
         if (!(player.level() instanceof ServerLevel serverLevel)) return;
 
-        // Pure Vanilla killed -> grant Puppeteer power to Fire class
+        // Pure Vanilla killed -> drop Soul Stone
         if (killed instanceof net.minecraft.world.entity.npc.Villager villager
                 && villager.getTags().contains("pure_vanilla_prisoner")) {
-            player.getCapability(PlayerElementProvider.PLAYER_ELEMENT).ifPresent(data -> {
-                if (data.getElement() == ElementType.FIRE && !data.hasPuppeteerPower()) {
-                    data.setPuppeteerPower(true);
-                    syncToClient(player, data);
+            // Drop the Soul Stone
+            net.minecraft.world.entity.item.ItemEntity soulStone = new net.minecraft.world.entity.item.ItemEntity(
+                    serverLevel, killed.getX(), killed.getY() + 0.5, killed.getZ(),
+                    new net.minecraft.world.item.ItemStack(com.noxgg.elementalpower.item.ModItems.SOUL_STONE.get()));
+            soulStone.setGlowingTag(true);
+            soulStone.setNoGravity(true); // Floats in the air
+            serverLevel.addFreshEntity(soulStone);
 
-                    // Dramatic reveal
-                    player.sendSystemMessage(Component.literal(""));
-                    player.sendSystemMessage(Component.literal("")
-                            .append(Component.literal("   Pure Vanilla").withStyle(ChatFormatting.WHITE, ChatFormatting.BOLD))
-                            .append(Component.literal(" s'effondre...").withStyle(ChatFormatting.GRAY, ChatFormatting.ITALIC)));
-                    player.sendSystemMessage(Component.literal(""));
-                    player.sendSystemMessage(Component.literal("")
-                            .append(Component.literal(">> NOUVEAU POUVOIR DEBLOQUE: ").withStyle(ChatFormatting.GOLD, ChatFormatting.BOLD))
-                            .append(Component.literal("MARIONNETTISTE!").withStyle(ChatFormatting.YELLOW, ChatFormatting.BOLD)));
-                    player.sendSystemMessage(Component.literal("")
-                            .append(Component.literal("   Appuyez sur ").withStyle(ChatFormatting.GRAY))
-                            .append(Component.literal("R").withStyle(ChatFormatting.YELLOW, ChatFormatting.BOLD))
-                            .append(Component.literal(" pour controler les mobs autour de vous!").withStyle(ChatFormatting.GRAY)));
-                    player.sendSystemMessage(Component.literal(""));
+            // Dramatic effects
+            serverLevel.sendParticles(net.minecraft.core.particles.ParticleTypes.SOUL,
+                    killed.getX(), killed.getY() + 1, killed.getZ(), 30, 0.5, 1, 0.5, 0.05);
+            serverLevel.sendParticles(net.minecraft.core.particles.ParticleTypes.END_ROD,
+                    killed.getX(), killed.getY() + 1, killed.getZ(), 20, 0.3, 0.5, 0.3, 0.03);
+            serverLevel.playSound(null, killed.blockPosition(),
+                    SoundEvents.SCULK_CATALYST_BLOOM, SoundSource.NEUTRAL, 1.5f, 0.5f);
 
-                    // Effects
-                    serverLevel.sendParticles(net.minecraft.core.particles.ParticleTypes.TOTEM_OF_UNDYING,
-                            player.getX(), player.getY() + 1, player.getZ(), 50, 1, 2, 1, 0.3);
-                    serverLevel.playSound(null, player.blockPosition(),
-                            SoundEvents.UI_TOAST_CHALLENGE_COMPLETE, SoundSource.PLAYERS, 1.5f, 1.0f);
-                }
-            });
+            player.sendSystemMessage(Component.literal(""));
+            player.sendSystemMessage(Component.literal("")
+                    .append(Component.literal("   Pure Vanilla").withStyle(ChatFormatting.WHITE, ChatFormatting.BOLD))
+                    .append(Component.literal(" s'effondre... Une ").withStyle(ChatFormatting.GRAY, ChatFormatting.ITALIC))
+                    .append(Component.literal("Pierre d'Ame").withStyle(ChatFormatting.LIGHT_PURPLE, ChatFormatting.BOLD))
+                    .append(Component.literal(" flotte dans les airs!").withStyle(ChatFormatting.GRAY, ChatFormatting.ITALIC)));
+            player.sendSystemMessage(Component.literal("")
+                    .append(Component.literal("   >> ").withStyle(ChatFormatting.DARK_PURPLE))
+                    .append(Component.literal("Apportez-la a Shadow Milk pour debloquer un pouvoir!").withStyle(ChatFormatting.LIGHT_PURPLE)));
+            player.sendSystemMessage(Component.literal(""));
         }
 
         // Alastor kill tracking for Shadow Milk domain
