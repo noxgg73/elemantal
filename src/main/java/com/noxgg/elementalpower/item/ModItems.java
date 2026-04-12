@@ -146,6 +146,29 @@ public class ModItems {
     public static final RegistryObject<Item> ELEMENT_RESET_PEARL = ITEMS.register("element_reset_pearl",
             () -> new ElementResetPearlItem(new Item.Properties().stacksTo(1).rarity(net.minecraft.world.item.Rarity.EPIC)));
 
+    // Moon Contract Rewards (infinite durability)
+    public static final RegistryObject<Item> EXPLOSIVE_CONCENTRATION = ITEMS.register("explosive_concentration",
+            () -> new SwordItem(Tiers.NETHERITE, 10, -2.4f,
+                    new Item.Properties().stacksTo(1).rarity(net.minecraft.world.item.Rarity.EPIC)) {
+                @Override
+                public boolean isFoil(net.minecraft.world.item.ItemStack stack) { return true; }
+                @Override
+                public boolean isEnchantable(net.minecraft.world.item.ItemStack stack) { return true; }
+            });
+
+    public static final RegistryObject<Item> PROTECTION_GAUNTLET = ITEMS.register("protection_gauntlet",
+            () -> new Item(new Item.Properties().stacksTo(1).rarity(net.minecraft.world.item.Rarity.EPIC)) {
+                @Override
+                public boolean isFoil(net.minecraft.world.item.ItemStack stack) { return true; }
+            });
+
+    public static final RegistryObject<Item> MORGAN_SWORD = ITEMS.register("morgan_sword",
+            () -> new SwordItem(Tiers.NETHERITE, 12, -2.2f,
+                    new Item.Properties().stacksTo(1).rarity(net.minecraft.world.item.Rarity.EPIC)) {
+                @Override
+                public boolean isFoil(net.minecraft.world.item.ItemStack stack) { return true; }
+            });
+
     public static void register(IEventBus eventBus) {
         ITEMS.register(eventBus);
     }

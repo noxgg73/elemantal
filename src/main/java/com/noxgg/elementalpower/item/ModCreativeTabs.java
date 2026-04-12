@@ -85,6 +85,11 @@ public class ModCreativeTabs {
                         // Reset Pearl
                         output.accept(ModItems.ELEMENT_RESET_PEARL.get());
 
+                        // Moon Contract Rewards
+                        output.accept(ModItems.EXPLOSIVE_CONCENTRATION.get());
+                        output.accept(ModItems.PROTECTION_GAUNTLET.get());
+                        output.accept(ModItems.MORGAN_SWORD.get());
+
                         // Air Armor
                         output.accept(ModItems.AIR_HELMET.get());
                         output.accept(ModItems.AIR_CHESTPLATE.get());

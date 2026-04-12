@@ -14,6 +14,12 @@ public class PlayerElement {
     private int alastorSpellSlot = 0; // 0=Tentacules, 1=Vaudou, 2=Onde Radio
     private boolean hasPuppeteerPower = false; // Fire class: puppeteer power from killing Pure Vanilla
 
+    // Soul Contract tracking
+    private boolean hasActiveContract = false;
+    private int contractQuestIndex = -1;
+    private long contractDeadlineTick = -1; // world game time deadline
+    private boolean contractCompleted = false;
+
     public ElementType getElement() { return element; }
 
     public void setElement(ElementType element) {
@@ -44,6 +50,30 @@ public class PlayerElement {
 
     public boolean hasPuppeteerPower() { return hasPuppeteerPower; }
     public void setPuppeteerPower(boolean power) { this.hasPuppeteerPower = power; }
+
+    // Soul Contract methods
+    public boolean hasActiveContract() { return hasActiveContract; }
+    public int getContractQuestIndex() { return contractQuestIndex; }
+    public long getContractDeadlineTick() { return contractDeadlineTick; }
+    public boolean isContractCompleted() { return contractCompleted; }
+
+    public void startContract(int questIndex, long deadlineTick) {
+        this.hasActiveContract = true;
+        this.contractQuestIndex = questIndex;
+        this.contractDeadlineTick = deadlineTick;
+        this.contractCompleted = false;
+    }
+
+    public void completeContract() {
+        this.contractCompleted = true;
+    }
+
+    public void clearContract() {
+        this.hasActiveContract = false;
+        this.contractQuestIndex = -1;
+        this.contractDeadlineTick = -1;
+        this.contractCompleted = false;
+    }
 
     public int getXpForNextLevel() {
         return level * 50 + (level * level * 10);
@@ -83,6 +113,10 @@ public class PlayerElement {
         this.alastorModeActive = source.alastorModeActive;
         this.alastorSpellSlot = source.alastorSpellSlot;
         this.hasPuppeteerPower = source.hasPuppeteerPower;
+        this.hasActiveContract = source.hasActiveContract;
+        this.contractQuestIndex = source.contractQuestIndex;
+        this.contractDeadlineTick = source.contractDeadlineTick;
+        this.contractCompleted = source.contractCompleted;
     }
 
     public void saveNBT(CompoundTag tag) {
@@ -96,6 +130,10 @@ public class PlayerElement {
         tag.putBoolean("alastorModeActive", alastorModeActive);
         tag.putInt("alastorSpellSlot", alastorSpellSlot);
         tag.putBoolean("hasPuppeteerPower", hasPuppeteerPower);
+        tag.putBoolean("hasActiveContract", hasActiveContract);
+        tag.putInt("contractQuestIndex", contractQuestIndex);
+        tag.putLong("contractDeadlineTick", contractDeadlineTick);
+        tag.putBoolean("contractCompleted", contractCompleted);
     }
 
     public void loadNBT(CompoundTag tag) {
@@ -110,5 +148,9 @@ public class PlayerElement {
         alastorModeActive = tag.contains("alastorModeActive") ? tag.getBoolean("alastorModeActive") : isAlastor;
         alastorSpellSlot = tag.getInt("alastorSpellSlot");
         hasPuppeteerPower = tag.getBoolean("hasPuppeteerPower");
+        hasActiveContract = tag.getBoolean("hasActiveContract");
+        contractQuestIndex = tag.getInt("contractQuestIndex");
+        contractDeadlineTick = tag.getLong("contractDeadlineTick");
+        contractCompleted = tag.getBoolean("contractCompleted");
     }
 }

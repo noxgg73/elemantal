@@ -80,6 +80,18 @@ public class ModEvents {
     public static void onPlayerSleep(PlayerSleepInBedEvent event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
         if (DreamManager.isDreaming(player.getUUID())) return;
+        if (DreamManager.isInDeathSequence(player.getUUID())) return;
+
+        // If player has an active unfulfilled contract, let them sleep normally
+        boolean[] hasActiveContract = {false};
+        player.getCapability(PlayerElementProvider.PLAYER_ELEMENT).ifPresent(data -> {
+            hasActiveContract[0] = data.hasActiveContract() && !data.isContractCompleted();
+        });
+
+        if (hasActiveContract[0]) {
+            // Normal sleep - don't interfere
+            return;
+        }
 
         // Cancel normal sleep and start dream sequence
         event.setResult(Player.BedSleepingProblem.OTHER_PROBLEM);
