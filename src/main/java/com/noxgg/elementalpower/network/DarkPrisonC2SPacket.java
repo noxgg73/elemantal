@@ -55,7 +55,9 @@ public class DarkPrisonC2SPacket {
                         && element != ElementType.DEMON && element != ElementType.NATURE
                         && element != ElementType.AIR && element != ElementType.TIME
                         && element != ElementType.UNDERTALE && element != ElementType.EARTH
-                        && element != ElementType.WATER) {
+                        && element != ElementType.WATER
+                        && element != ElementType.PIERROT && element != ElementType.HARLEQUIN
+                        && element != ElementType.TICKET_TAKER) {
                     player.sendSystemMessage(Component.literal("Ce sort n'est pas disponible pour ta classe!")
                             .withStyle(ChatFormatting.RED));
                     return;
@@ -488,6 +490,179 @@ public class DarkPrisonC2SPacket {
                             .withStyle(ChatFormatting.GREEN, ChatFormatting.BOLD)
                             .append(Component.literal("La cible est aspiree dans le vortex temporel... elle vieillira et sera bombardee!")
                                     .withStyle(ChatFormatting.DARK_GREEN)));
+                    return;
+                }
+
+                // PIERROT: Lien d'Obsession - target attirée vers le joueur, fils visibles, wither
+                if (element == ElementType.PIERROT) {
+                    Vec3 pEye = player.getEyePosition();
+                    Vec3 pLook = player.getLookAngle();
+                    LivingEntity pTarget = null;
+                    double pClosest = 30.0;
+
+                    for (Entity entity : level.getEntities(player,
+                            player.getBoundingBox().inflate(30),
+                            e -> e instanceof LivingEntity && e != player)) {
+                        LivingEntity living = (LivingEntity) entity;
+                        Vec3 toEntity = living.position().add(0, living.getBbHeight() / 2, 0).subtract(pEye);
+                        double dist = toEntity.length();
+                        if (dist > pClosest) continue;
+                        if (pLook.dot(toEntity.normalize()) > 0.92) {
+                            pClosest = dist;
+                            pTarget = living;
+                        }
+                    }
+
+                    if (pTarget == null) {
+                        player.sendSystemMessage(Component.literal("Aucune proie en vue!").withStyle(ChatFormatting.GRAY));
+                        return;
+                    }
+
+                    Vec3 pull = player.position().subtract(pTarget.position()).normalize().scale(2.5);
+                    pTarget.setDeltaMovement(pull.x, 0.4, pull.z);
+                    pTarget.hurtMarked = true;
+                    pTarget.hurt(level.damageSources().magic(), 8.0f);
+                    pTarget.addEffect(new MobEffectInstance(MobEffects.WITHER, 200, 4));
+                    pTarget.addEffect(new MobEffectInstance(MobEffects.BLINDNESS, 200, 0));
+                    pTarget.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 200, 5));
+
+                    Vec3 tp = pTarget.position();
+                    var redDust = new net.minecraft.core.particles.DustParticleOptions(
+                            new org.joml.Vector3f(0.3f, 0.0f, 0.4f), 1.5f);
+                    for (int i = 0; i < 30; i++) {
+                        double t = i / 30.0;
+                        double px = player.getX() + (tp.x - player.getX()) * t;
+                        double py = player.getEyeY() + (tp.y + 1 - player.getEyeY()) * t;
+                        double pz = player.getZ() + (tp.z - player.getZ()) * t;
+                        level.sendParticles(redDust, px, py, pz, 2, 0.05, 0.05, 0.05, 0.01);
+                        level.sendParticles(ParticleTypes.SCULK_SOUL, px, py, pz, 1, 0.03, 0.03, 0.03, 0.005);
+                    }
+
+                    player.addEffect(new MobEffectInstance(MobEffects.REGENERATION, 120, 2));
+                    player.addEffect(new MobEffectInstance(MobEffects.DAMAGE_BOOST, 200, 1));
+
+                    level.playSound(null, player.blockPosition(), SoundEvents.WITHER_HURT, SoundSource.PLAYERS, 0.7f, 0.5f);
+                    level.playSound(null, pTarget.blockPosition(), SoundEvents.SCULK_SHRIEKER_SHRIEK, SoundSource.PLAYERS, 1.0f, 0.6f);
+
+                    player.sendSystemMessage(Component.literal(">> Lien d'Obsession! ")
+                            .withStyle(ChatFormatting.DARK_PURPLE, ChatFormatting.BOLD)
+                            .append(Component.literal("Tu es a moi...").withStyle(ChatFormatting.LIGHT_PURPLE)));
+                    return;
+                }
+
+                // HARLEQUIN: Echange Cruel - swap positions, malus massifs sur la cible
+                if (element == ElementType.HARLEQUIN) {
+                    Vec3 hEye = player.getEyePosition();
+                    Vec3 hLook = player.getLookAngle();
+                    LivingEntity hTarget = null;
+                    double hClosest = 25.0;
+
+                    for (Entity entity : level.getEntities(player,
+                            player.getBoundingBox().inflate(25),
+                            e -> e instanceof LivingEntity && e != player)) {
+                        LivingEntity living = (LivingEntity) entity;
+                        Vec3 toEntity = living.position().add(0, living.getBbHeight() / 2, 0).subtract(hEye);
+                        double dist = toEntity.length();
+                        if (dist > hClosest) continue;
+                        if (hLook.dot(toEntity.normalize()) > 0.9) {
+                            hClosest = dist;
+                            hTarget = living;
+                        }
+                    }
+
+                    if (hTarget == null) {
+                        player.sendSystemMessage(Component.literal("Aucune dupe en vue!").withStyle(ChatFormatting.GRAY));
+                        return;
+                    }
+
+                    Vec3 myPos = player.position();
+                    Vec3 tgtPos = hTarget.position();
+                    player.teleportTo(tgtPos.x, tgtPos.y, tgtPos.z);
+                    hTarget.teleportTo(myPos.x, myPos.y, myPos.z);
+
+                    hTarget.addEffect(new MobEffectInstance(MobEffects.CONFUSION, 300, 4));
+                    hTarget.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 300, 3));
+                    hTarget.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 300, 4));
+                    hTarget.addEffect(new MobEffectInstance(MobEffects.GLOWING, 300, 0));
+                    hTarget.addEffect(new MobEffectInstance(MobEffects.LEVITATION, 30, 1));
+
+                    player.heal(6.0f);
+                    player.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SPEED, 200, 2));
+                    player.addEffect(new MobEffectInstance(MobEffects.JUMP, 200, 2));
+                    player.addEffect(new MobEffectInstance(MobEffects.DAMAGE_RESISTANCE, 60, 4));
+
+                    for (int i = 0; i < 40; i++) {
+                        double a = level.random.nextDouble() * Math.PI * 2;
+                        double r = level.random.nextDouble() * 2;
+                        level.sendParticles(ParticleTypes.NOTE,
+                                player.getX() + Math.cos(a) * r, player.getY() + 1, player.getZ() + Math.sin(a) * r,
+                                1, 0.1, 0.5, 0.1, 1.0);
+                        level.sendParticles(ParticleTypes.HEART,
+                                hTarget.getX(), hTarget.getY() + hTarget.getBbHeight(), hTarget.getZ(),
+                                1, 0.3, 0.2, 0.3, 0.02);
+                    }
+                    level.sendParticles(ParticleTypes.PORTAL, myPos.x, myPos.y + 1, myPos.z, 30, 0.5, 1, 0.5, 0.5);
+                    level.sendParticles(ParticleTypes.PORTAL, tgtPos.x, tgtPos.y + 1, tgtPos.z, 30, 0.5, 1, 0.5, 0.5);
+
+                    level.playSound(null, player.blockPosition(), SoundEvents.EVOKER_CAST_SPELL, SoundSource.PLAYERS, 1.5f, 1.4f);
+                    level.playSound(null, player.blockPosition(), SoundEvents.ENDERMAN_TELEPORT, SoundSource.PLAYERS, 1.0f, 1.2f);
+
+                    player.sendSystemMessage(Component.literal(">> Echange Cruel! ")
+                            .withStyle(ChatFormatting.RED, ChatFormatting.BOLD)
+                            .append(Component.literal("La place de la dupe est plus interessante...")
+                                    .withStyle(ChatFormatting.LIGHT_PURPLE)));
+                    return;
+                }
+
+                // TICKET_TAKER: Confiscation - draine HP de tous les vivants en 15 blocs
+                if (element == ElementType.TICKET_TAKER) {
+                    var ttVictims = level.getEntities(player, player.getBoundingBox().inflate(15),
+                            e -> e instanceof LivingEntity && e != player);
+
+                    if (ttVictims.isEmpty()) {
+                        player.sendSystemMessage(Component.literal("Personne a poinconner...").withStyle(ChatFormatting.GRAY));
+                        return;
+                    }
+
+                    int drained = 0;
+                    float totalHeal = 0;
+                    var goldDust = new net.minecraft.core.particles.DustParticleOptions(
+                            new org.joml.Vector3f(1.0f, 0.84f, 0.0f), 1.5f);
+
+                    for (Entity entity : ttVictims) {
+                        if (!(entity instanceof LivingEntity living)) continue;
+                        living.hurt(level.damageSources().magic(), 5.0f);
+                        living.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 240, 3));
+                        living.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 240, 2));
+                        living.addEffect(new MobEffectInstance(MobEffects.DIG_SLOWDOWN, 240, 3));
+                        living.addEffect(new MobEffectInstance(MobEffects.GLOWING, 240, 0));
+
+                        Vec3 vp = living.position();
+                        for (int i = 0; i < 15; i++) {
+                            double t = i / 15.0;
+                            double px = vp.x + (player.getX() - vp.x) * t;
+                            double py = (vp.y + 1) + (player.getEyeY() - (vp.y + 1)) * t;
+                            double pz = vp.z + (player.getZ() - vp.z) * t;
+                            level.sendParticles(goldDust, px, py, pz, 2, 0.05, 0.05, 0.05, 0.01);
+                        }
+                        level.sendParticles(ParticleTypes.END_ROD,
+                                vp.x, vp.y + living.getBbHeight() + 0.3, vp.z, 5, 0.3, 0.2, 0.3, 0.02);
+
+                        drained++;
+                        totalHeal += 1.5f;
+                    }
+
+                    player.heal(totalHeal);
+                    player.addEffect(new MobEffectInstance(MobEffects.ABSORPTION, 600, 3));
+                    player.addEffect(new MobEffectInstance(MobEffects.SATURATION, 100, 0));
+                    player.addEffect(new MobEffectInstance(MobEffects.DAMAGE_RESISTANCE, 200, 1));
+
+                    level.playSound(null, player.blockPosition(), SoundEvents.BELL_RESONATE, SoundSource.PLAYERS, 2.0f, 1.0f);
+                    level.playSound(null, player.blockPosition(), SoundEvents.AMETHYST_BLOCK_CHIME, SoundSource.PLAYERS, 1.5f, 0.8f);
+
+                    player.sendSystemMessage(Component.literal(">> Confiscation! ")
+                            .withStyle(ChatFormatting.GOLD, ChatFormatting.BOLD)
+                            .append(Component.literal(drained + " billets percus.").withStyle(ChatFormatting.YELLOW)));
                     return;
                 }
 
