@@ -55,9 +55,9 @@ public enum ElementType {
             case LIGHTNING -> "Maitrise de la foudre. Invoque la foudre, vitesse eclair.";
             case ROYAL -> "Pouvoir royal. Force, resistance, aura doree, couronne de puissance.";
             case UNDERTALE -> "Le pouvoir de la Determination. Choisissez Chara ou Frisk.";
-            case PIERROT -> "Le Yandere silencieux du Cirque. Teleportation derriere la cible, Wither, vol de vie.";
-            case HARLEQUIN -> "Le rival seducteur du Cirque. Charme zone (nausee/faiblesse), agilite extreme.";
-            case TICKET_TAKER -> "Le Receveur du Cirque. Ticket maudit: paralysie + cecite, marque mortelle.";
+            case PIERROT -> "Yandere silencieux. R: Obsession Mortelle (tp+execution proie blessee). Sneak: invisibilite.";
+            case HARLEQUIN -> "Rival seducteur. R: Mascarade (mobs s'entretuent, charme de zone). Agilite extreme.";
+            case TICKET_TAKER -> "Receveur du Cirque. R: Ticket Maudit (cage en barreaux + paralysie totale). Resistance.";
             case NONE -> "Aucun element selectionne.";
         };
     }

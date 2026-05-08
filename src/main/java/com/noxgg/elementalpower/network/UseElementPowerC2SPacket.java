@@ -462,6 +462,185 @@ public class UseElementPowerC2SPacket {
                                 .append(net.minecraft.network.chat.Component.literal("Votre forteresse vous attend, Majeste!")
                                         .withStyle(net.minecraft.ChatFormatting.YELLOW)));
                     }
+                    case PIERROT -> {
+                        // OBSESSION MORTELLE: tp derriere la cible la plus blessee, frappe massive, wither
+                        net.minecraft.world.entity.LivingEntity prey = null;
+                        double bestScore = -1;
+                        for (var entity : level.getEntities(player, player.getBoundingBox().inflate(30),
+                                e -> e instanceof net.minecraft.world.entity.LivingEntity && e != player)) {
+                            net.minecraft.world.entity.LivingEntity living = (net.minecraft.world.entity.LivingEntity) entity;
+                            double missingPct = 1.0 - (living.getHealth() / living.getMaxHealth());
+                            double score = missingPct * 100 + (1.0 / Math.max(1.0, player.distanceTo(living)));
+                            if (score > bestScore) {
+                                bestScore = score;
+                                prey = living;
+                            }
+                        }
+
+                        if (prey != null) {
+                            Vec3 behind = prey.position().subtract(prey.getLookAngle().scale(1.3));
+                            player.teleportTo(behind.x, behind.y, behind.z);
+                            float missingPct = 1.0f - (prey.getHealth() / prey.getMaxHealth());
+                            float damage = 14.0f + missingPct * 26.0f;
+                            prey.hurt(level.damageSources().magic(), damage);
+                            prey.addEffect(new MobEffectInstance(MobEffects.WITHER, 120, 3));
+                            prey.addEffect(new MobEffectInstance(MobEffects.BLINDNESS, 120, 1));
+                            prey.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 120, 4));
+
+                            for (int i = 0; i < 40; i++) {
+                                level.sendParticles(net.minecraft.core.particles.ParticleTypes.SCULK_SOUL,
+                                        prey.getX(), prey.getY() + 1, prey.getZ(),
+                                        2, 0.4, 0.6, 0.4, 0.05);
+                            }
+                            level.sendParticles(net.minecraft.core.particles.ParticleTypes.LARGE_SMOKE,
+                                    prey.getX(), prey.getY() + 1, prey.getZ(), 30, 0.5, 0.5, 0.5, 0.02);
+
+                            player.sendSystemMessage(net.minecraft.network.chat.Component.literal(">> Obsession mortelle... ")
+                                    .withStyle(net.minecraft.ChatFormatting.DARK_PURPLE, net.minecraft.ChatFormatting.BOLD)
+                                    .append(net.minecraft.network.chat.Component.literal("(" + (int)damage + " degats)")
+                                            .withStyle(net.minecraft.ChatFormatting.DARK_RED)));
+                        } else {
+                            player.sendSystemMessage(net.minecraft.network.chat.Component.literal(">> Le silence... aucune proie en vue.")
+                                    .withStyle(net.minecraft.ChatFormatting.DARK_PURPLE));
+                        }
+
+                        player.addEffect(new MobEffectInstance(MobEffects.INVISIBILITY, 160, 0));
+                        player.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SPEED, 160, 1));
+                        player.addEffect(new MobEffectInstance(MobEffects.DAMAGE_BOOST, 160, 1));
+
+                        level.playSound(null, player.blockPosition(), SoundEvents.ENDERMAN_TELEPORT, SoundSource.PLAYERS, 1.0f, 0.5f);
+                        level.playSound(null, player.blockPosition(), SoundEvents.PHANTOM_AMBIENT, SoundSource.PLAYERS, 1.0f, 0.4f);
+                        level.playSound(null, player.blockPosition(), SoundEvents.WITHER_HURT, SoundSource.PLAYERS, 0.6f, 0.7f);
+                    }
+                    case HARLEQUIN -> {
+                        // MASCARADE: charme tous les hostiles autour, ils s'entretuent
+                        var victims = level.getEntities(player, player.getBoundingBox().inflate(12),
+                                e -> e instanceof net.minecraft.world.entity.Mob && e != player);
+
+                        net.minecraft.world.entity.LivingEntity[] arr = victims.stream()
+                                .map(e -> (net.minecraft.world.entity.LivingEntity) e)
+                                .toArray(net.minecraft.world.entity.LivingEntity[]::new);
+
+                        for (int i = 0; i < arr.length; i++) {
+                            net.minecraft.world.entity.LivingEntity v = arr[i];
+                            net.minecraft.world.entity.LivingEntity rival = arr[(i + 1) % arr.length];
+                            if (rival == v && arr.length > 1) rival = arr[0];
+
+                            v.addEffect(new MobEffectInstance(MobEffects.CONFUSION, 240, 3));
+                            v.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 240, 2));
+                            v.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 100, 1));
+                            v.addEffect(new MobEffectInstance(MobEffects.GLOWING, 240, 0));
+
+                            if (v instanceof net.minecraft.world.entity.Mob mob && rival != v) {
+                                mob.setTarget(rival);
+                                mob.setLastHurtByMob(rival);
+                            }
+
+                            level.sendParticles(net.minecraft.core.particles.ParticleTypes.HEART,
+                                    v.getX(), v.getY() + v.getBbHeight() + 0.3, v.getZ(),
+                                    3, 0.3, 0.2, 0.3, 0.02);
+                            level.sendParticles(net.minecraft.core.particles.ParticleTypes.ENCHANT,
+                                    v.getX(), v.getY() + 1, v.getZ(),
+                                    15, 0.5, 0.5, 0.5, 0.5);
+                        }
+
+                        player.heal(10.0f);
+                        player.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SPEED, 300, 2));
+                        player.addEffect(new MobEffectInstance(MobEffects.JUMP, 300, 2));
+                        player.addEffect(new MobEffectInstance(MobEffects.DAMAGE_BOOST, 300, 1));
+                        player.addEffect(new MobEffectInstance(MobEffects.LUCK, 300, 1));
+
+                        for (int i = 0; i < 60; i++) {
+                            double angle = level.random.nextDouble() * Math.PI * 2;
+                            double radius = level.random.nextDouble() * 6;
+                            double px = player.getX() + Math.cos(angle) * radius;
+                            double pz = player.getZ() + Math.sin(angle) * radius;
+                            level.sendParticles(net.minecraft.core.particles.ParticleTypes.NOTE,
+                                    px, player.getY() + 1.5, pz, 1, 0.5, 0.3, 0.5, 1.0);
+                        }
+
+                        level.playSound(null, player.blockPosition(), SoundEvents.EVOKER_CAST_SPELL, SoundSource.PLAYERS, 1.5f, 1.4f);
+                        level.playSound(null, player.blockPosition(), SoundEvents.PILLAGER_CELEBRATE, SoundSource.PLAYERS, 1.0f, 1.2f);
+
+                        player.sendSystemMessage(net.minecraft.network.chat.Component.literal(">> Mascarade! ")
+                                .withStyle(net.minecraft.ChatFormatting.RED, net.minecraft.ChatFormatting.BOLD)
+                                .append(net.minecraft.network.chat.Component.literal(arr.length + " marionnettes dansent...")
+                                        .withStyle(net.minecraft.ChatFormatting.LIGHT_PURPLE)));
+                    }
+                    case TICKET_TAKER -> {
+                        // TICKET MAUDIT: cage de cirque autour de la cible la plus proche, paralysie totale
+                        net.minecraft.world.entity.LivingEntity target = null;
+                        double bestDist = 25.0 * 25.0;
+                        for (var entity : level.getEntities(player, player.getBoundingBox().inflate(25),
+                                e -> e instanceof net.minecraft.world.entity.LivingEntity && e != player)) {
+                            net.minecraft.world.entity.LivingEntity living = (net.minecraft.world.entity.LivingEntity) entity;
+                            double d = living.distanceToSqr(player);
+                            if (d < bestDist) {
+                                bestDist = d;
+                                target = living;
+                            }
+                        }
+
+                        if (target != null) {
+                            BlockPos center = target.blockPosition();
+
+                            // Cage 5x5 d'iron bars autour de la cible
+                            for (int y = 0; y < 4; y++) {
+                                for (int x = -2; x <= 2; x++) {
+                                    for (int z = -2; z <= 2; z++) {
+                                        boolean perimeter = (x == -2 || x == 2 || z == -2 || z == 2);
+                                        boolean roof = (y == 3);
+                                        if (perimeter && !roof) {
+                                            BlockPos p = center.offset(x, y, z);
+                                            if (level.getBlockState(p).isAir()) {
+                                                level.setBlock(p, Blocks.IRON_BARS.defaultBlockState(), 3);
+                                            }
+                                        } else if (roof && (Math.abs(x) <= 2 && Math.abs(z) <= 2)) {
+                                            BlockPos p = center.offset(x, y, z);
+                                            if (level.getBlockState(p).isAir()) {
+                                                level.setBlock(p, Blocks.IRON_BARS.defaultBlockState(), 3);
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
+                            target.hurt(level.damageSources().magic(), 16.0f);
+                            target.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 200, 5));
+                            target.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 200, 3));
+                            target.addEffect(new MobEffectInstance(MobEffects.DIG_SLOWDOWN, 200, 5));
+                            target.addEffect(new MobEffectInstance(MobEffects.BLINDNESS, 200, 0));
+                            target.addEffect(new MobEffectInstance(MobEffects.WITHER, 80, 0));
+                            target.setDeltaMovement(0, 0, 0);
+
+                            for (int i = 0; i < 50; i++) {
+                                double angle = level.random.nextDouble() * Math.PI * 2;
+                                double r = 2.2;
+                                double px = center.getX() + 0.5 + Math.cos(angle) * r;
+                                double pz = center.getZ() + 0.5 + Math.sin(angle) * r;
+                                level.sendParticles(net.minecraft.core.particles.ParticleTypes.END_ROD,
+                                        px, center.getY() + level.random.nextDouble() * 4, pz,
+                                        1, 0, 0, 0, 0);
+                            }
+                            level.sendParticles(net.minecraft.core.particles.ParticleTypes.FLASH,
+                                    center.getX() + 0.5, center.getY() + 1, center.getZ() + 0.5, 1, 0, 0, 0, 0);
+
+                            player.sendSystemMessage(net.minecraft.network.chat.Component.literal(">> Ticket maudit poinconne! ")
+                                    .withStyle(net.minecraft.ChatFormatting.GOLD, net.minecraft.ChatFormatting.BOLD)
+                                    .append(net.minecraft.network.chat.Component.literal("Bienvenue au cirque...")
+                                            .withStyle(net.minecraft.ChatFormatting.YELLOW)));
+                        } else {
+                            player.sendSystemMessage(net.minecraft.network.chat.Component.literal(">> Aucun spectateur a inviter.")
+                                    .withStyle(net.minecraft.ChatFormatting.GOLD));
+                        }
+
+                        player.addEffect(new MobEffectInstance(MobEffects.ABSORPTION, 600, 3));
+                        player.addEffect(new MobEffectInstance(MobEffects.DAMAGE_RESISTANCE, 200, 1));
+
+                        level.playSound(null, player.blockPosition(), SoundEvents.BELL_RESONATE, SoundSource.PLAYERS, 2.0f, 1.0f);
+                        level.playSound(null, player.blockPosition(), SoundEvents.AMETHYST_BLOCK_CHIME, SoundSource.PLAYERS, 1.5f, 0.7f);
+                        level.playSound(null, player.blockPosition(), SoundEvents.IRON_DOOR_CLOSE, SoundSource.PLAYERS, 1.5f, 0.6f);
+                    }
                     default -> {}
                 }
             });
