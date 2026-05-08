@@ -169,6 +169,50 @@ public class ModItems {
                 public boolean isFoil(net.minecraft.world.item.ItemStack stack) { return true; }
             });
 
+    // Freak Circus crystals
+    public static final RegistryObject<Item> PIERROT_CRYSTAL = ITEMS.register("pierrot_crystal",
+            () -> new Item(new Item.Properties().rarity(net.minecraft.world.item.Rarity.RARE)));
+    public static final RegistryObject<Item> HARLEQUIN_CRYSTAL = ITEMS.register("harlequin_crystal",
+            () -> new Item(new Item.Properties().rarity(net.minecraft.world.item.Rarity.RARE)));
+    public static final RegistryObject<Item> TICKET_TAKER_CRYSTAL = ITEMS.register("ticket_taker_crystal",
+            () -> new Item(new Item.Properties().rarity(net.minecraft.world.item.Rarity.RARE)));
+
+    // Freak Circus ingots
+    public static final RegistryObject<Item> PIERROT_INGOT = ITEMS.register("pierrot_ingot",
+            () -> new Item(new Item.Properties().rarity(net.minecraft.world.item.Rarity.RARE)));
+    public static final RegistryObject<Item> HARLEQUIN_INGOT = ITEMS.register("harlequin_ingot",
+            () -> new Item(new Item.Properties().rarity(net.minecraft.world.item.Rarity.RARE)));
+    public static final RegistryObject<Item> TICKET_TAKER_INGOT = ITEMS.register("ticket_taker_ingot",
+            () -> new Item(new Item.Properties().rarity(net.minecraft.world.item.Rarity.RARE)));
+
+    // Freak Circus wands
+    public static final RegistryObject<Item> PIERROT_WAND = ITEMS.register("pierrot_wand",
+            () -> new ElementalWandItem(new Item.Properties().stacksTo(1).durability(250)
+                    .rarity(net.minecraft.world.item.Rarity.EPIC),
+                    ElementalWandItem.Element.PIERROT));
+    public static final RegistryObject<Item> HARLEQUIN_WAND = ITEMS.register("harlequin_wand",
+            () -> new ElementalWandItem(new Item.Properties().stacksTo(1).durability(250)
+                    .rarity(net.minecraft.world.item.Rarity.EPIC),
+                    ElementalWandItem.Element.HARLEQUIN));
+    public static final RegistryObject<Item> TICKET_TAKER_WAND = ITEMS.register("ticket_taker_wand",
+            () -> new ElementalWandItem(new Item.Properties().stacksTo(1).durability(250)
+                    .rarity(net.minecraft.world.item.Rarity.EPIC),
+                    ElementalWandItem.Element.TICKET_TAKER));
+
+    // Freak Circus swords
+    public static final RegistryObject<Item> PIERROT_DAGGER = ITEMS.register("pierrot_dagger",
+            () -> new ElementalSwordItem(Tiers.NETHERITE, 7, -2.0f,
+                    new Item.Properties().rarity(net.minecraft.world.item.Rarity.EPIC),
+                    ElementalWandItem.Element.PIERROT));
+    public static final RegistryObject<Item> HARLEQUIN_BLADE = ITEMS.register("harlequin_blade",
+            () -> new ElementalSwordItem(Tiers.NETHERITE, 5, -1.6f,
+                    new Item.Properties().rarity(net.minecraft.world.item.Rarity.EPIC),
+                    ElementalWandItem.Element.HARLEQUIN));
+    public static final RegistryObject<Item> TICKET_PUNCH = ITEMS.register("ticket_punch",
+            () -> new ElementalSwordItem(Tiers.NETHERITE, 6, -2.4f,
+                    new Item.Properties().rarity(net.minecraft.world.item.Rarity.EPIC),
+                    ElementalWandItem.Element.TICKET_TAKER));
+
     public static void register(IEventBus eventBus) {
         ITEMS.register(eventBus);
     }

@@ -95,6 +95,20 @@ public class ModCreativeTabs {
                         output.accept(ModItems.AIR_CHESTPLATE.get());
                         output.accept(ModItems.AIR_LEGGINGS.get());
                         output.accept(ModItems.AIR_BOOTS.get());
+
+                        // Freak Circus
+                        output.accept(ModItems.PIERROT_CRYSTAL.get());
+                        output.accept(ModItems.HARLEQUIN_CRYSTAL.get());
+                        output.accept(ModItems.TICKET_TAKER_CRYSTAL.get());
+                        output.accept(ModItems.PIERROT_INGOT.get());
+                        output.accept(ModItems.HARLEQUIN_INGOT.get());
+                        output.accept(ModItems.TICKET_TAKER_INGOT.get());
+                        output.accept(ModItems.PIERROT_WAND.get());
+                        output.accept(ModItems.HARLEQUIN_WAND.get());
+                        output.accept(ModItems.TICKET_TAKER_WAND.get());
+                        output.accept(ModItems.PIERROT_DAGGER.get());
+                        output.accept(ModItems.HARLEQUIN_BLADE.get());
+                        output.accept(ModItems.TICKET_PUNCH.get());
                     })
                     .build());
 

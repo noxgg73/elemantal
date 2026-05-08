@@ -17,7 +17,10 @@ public enum ElementType {
     NATURE("nature", "Nature", ChatFormatting.GREEN, 0x228B22),
     LIGHTNING("lightning", "Foudre", ChatFormatting.YELLOW, 0xFFFF00),
     ROYAL("royal", "Royal", ChatFormatting.GOLD, 0xFFD700),
-    UNDERTALE("undertale", "Undertale", ChatFormatting.YELLOW, 0xFFFF00);
+    UNDERTALE("undertale", "Undertale", ChatFormatting.YELLOW, 0xFFFF00),
+    PIERROT("pierrot", "Pierrot", ChatFormatting.DARK_PURPLE, 0x2A0A4A),
+    HARLEQUIN("harlequin", "Harlequin", ChatFormatting.RED, 0xC20D45),
+    TICKET_TAKER("ticket_taker", "Ticket Taker", ChatFormatting.GOLD, 0xCFA227);
 
     private final String id;
     private final String displayName;
@@ -52,6 +55,9 @@ public enum ElementType {
             case LIGHTNING -> "Maitrise de la foudre. Invoque la foudre, vitesse eclair.";
             case ROYAL -> "Pouvoir royal. Force, resistance, aura doree, couronne de puissance.";
             case UNDERTALE -> "Le pouvoir de la Determination. Choisissez Chara ou Frisk.";
+            case PIERROT -> "Le Yandere silencieux du Cirque. Teleportation derriere la cible, Wither, vol de vie.";
+            case HARLEQUIN -> "Le rival seducteur du Cirque. Charme zone (nausee/faiblesse), agilite extreme.";
+            case TICKET_TAKER -> "Le Receveur du Cirque. Ticket maudit: paralysie + cecite, marque mortelle.";
             case NONE -> "Aucun element selectionne.";
         };
     }

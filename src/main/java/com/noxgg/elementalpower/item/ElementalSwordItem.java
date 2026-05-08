@@ -26,6 +26,20 @@ public class ElementalSwordItem extends SwordItem {
             }
             case EARTH -> target.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 100, 3));
             case AIR -> target.addEffect(new MobEffectInstance(MobEffects.LEVITATION, 40, 1));
+            case PIERROT -> {
+                target.addEffect(new MobEffectInstance(MobEffects.WITHER, 80, 1));
+                target.addEffect(new MobEffectInstance(MobEffects.BLINDNESS, 60, 0));
+                attacker.heal(3.0f);
+            }
+            case HARLEQUIN -> {
+                target.addEffect(new MobEffectInstance(MobEffects.CONFUSION, 120, 1));
+                target.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 120, 1));
+            }
+            case TICKET_TAKER -> {
+                target.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 100, 3));
+                target.addEffect(new MobEffectInstance(MobEffects.BLINDNESS, 60, 0));
+                target.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 120, 2));
+            }
         }
         return super.hurtEnemy(stack, target, attacker);
     }
