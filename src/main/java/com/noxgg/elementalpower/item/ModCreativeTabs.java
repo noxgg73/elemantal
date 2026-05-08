@@ -6,6 +6,8 @@ import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.level.ItemLike;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.RegistryObject;
@@ -14,101 +16,121 @@ public class ModCreativeTabs {
     public static final DeferredRegister<CreativeModeTab> CREATIVE_MODE_TABS =
             DeferredRegister.create(Registries.CREATIVE_MODE_TAB, ElementalPowerMod.MOD_ID);
 
+    private static <T extends ItemLike> void add(CreativeModeTab.Output output, RegistryObject<T> obj) {
+        try {
+            if (obj != null && obj.isPresent()) {
+                output.accept(obj.get());
+            }
+        } catch (Throwable ignored) {
+            // Item missing from registry (server desync) — skip silently
+        }
+    }
+
     public static final RegistryObject<CreativeModeTab> ELEMENTAL_TAB = CREATIVE_MODE_TABS.register("elemental_tab",
             () -> CreativeModeTab.builder()
-                    .icon(() -> new ItemStack(ModItems.FIRE_CRYSTAL.get()))
+                    .icon(() -> {
+                        try {
+                            if (ModItems.FIRE_CRYSTAL.isPresent()) {
+                                return new ItemStack(ModItems.FIRE_CRYSTAL.get());
+                            }
+                        } catch (Throwable ignored) {}
+                        return new ItemStack(Items.FIRE_CHARGE);
+                    })
                     .title(Component.translatable("creativetab.elementalpower"))
                     .displayItems((parameters, output) -> {
                         // Crystals
-                        output.accept(ModItems.FIRE_CRYSTAL.get());
-                        output.accept(ModItems.WATER_CRYSTAL.get());
-                        output.accept(ModItems.EARTH_CRYSTAL.get());
-                        output.accept(ModItems.AIR_CRYSTAL.get());
+                        add(output, ModItems.FIRE_CRYSTAL);
+                        add(output, ModItems.WATER_CRYSTAL);
+                        add(output, ModItems.EARTH_CRYSTAL);
+                        add(output, ModItems.AIR_CRYSTAL);
 
                         // Ingots
-                        output.accept(ModItems.FIRE_INGOT.get());
-                        output.accept(ModItems.WATER_INGOT.get());
-                        output.accept(ModItems.EARTH_INGOT.get());
-                        output.accept(ModItems.AIR_INGOT.get());
+                        add(output, ModItems.FIRE_INGOT);
+                        add(output, ModItems.WATER_INGOT);
+                        add(output, ModItems.EARTH_INGOT);
+                        add(output, ModItems.AIR_INGOT);
 
                         // Ores
-                        output.accept(ModBlocks.FIRE_ORE.get());
-                        output.accept(ModBlocks.WATER_ORE.get());
-                        output.accept(ModBlocks.EARTH_ORE.get());
-                        output.accept(ModBlocks.AIR_ORE.get());
+                        add(output, ModBlocks.FIRE_ORE);
+                        add(output, ModBlocks.WATER_ORE);
+                        add(output, ModBlocks.EARTH_ORE);
+                        add(output, ModBlocks.AIR_ORE);
 
                         // Storage Blocks
-                        output.accept(ModBlocks.FIRE_BLOCK.get());
-                        output.accept(ModBlocks.WATER_BLOCK.get());
-                        output.accept(ModBlocks.EARTH_BLOCK.get());
-                        output.accept(ModBlocks.AIR_BLOCK.get());
+                        add(output, ModBlocks.FIRE_BLOCK);
+                        add(output, ModBlocks.WATER_BLOCK);
+                        add(output, ModBlocks.EARTH_BLOCK);
+                        add(output, ModBlocks.AIR_BLOCK);
 
                         // Wands
-                        output.accept(ModItems.FIRE_WAND.get());
-                        output.accept(ModItems.WATER_WAND.get());
-                        output.accept(ModItems.EARTH_WAND.get());
-                        output.accept(ModItems.AIR_WAND.get());
+                        add(output, ModItems.FIRE_WAND);
+                        add(output, ModItems.WATER_WAND);
+                        add(output, ModItems.EARTH_WAND);
+                        add(output, ModItems.AIR_WAND);
 
                         // Swords
-                        output.accept(ModItems.FIRE_SWORD.get());
-                        output.accept(ModItems.WATER_SWORD.get());
-                        output.accept(ModItems.EARTH_SWORD.get());
-                        output.accept(ModItems.AIR_SWORD.get());
+                        add(output, ModItems.FIRE_SWORD);
+                        add(output, ModItems.WATER_SWORD);
+                        add(output, ModItems.EARTH_SWORD);
+                        add(output, ModItems.AIR_SWORD);
 
                         // Fire Armor
-                        output.accept(ModItems.FIRE_HELMET.get());
-                        output.accept(ModItems.FIRE_CHESTPLATE.get());
-                        output.accept(ModItems.FIRE_LEGGINGS.get());
-                        output.accept(ModItems.FIRE_BOOTS.get());
+                        add(output, ModItems.FIRE_HELMET);
+                        add(output, ModItems.FIRE_CHESTPLATE);
+                        add(output, ModItems.FIRE_LEGGINGS);
+                        add(output, ModItems.FIRE_BOOTS);
 
                         // Water Armor
-                        output.accept(ModItems.WATER_HELMET.get());
-                        output.accept(ModItems.WATER_CHESTPLATE.get());
-                        output.accept(ModItems.WATER_LEGGINGS.get());
-                        output.accept(ModItems.WATER_BOOTS.get());
+                        add(output, ModItems.WATER_HELMET);
+                        add(output, ModItems.WATER_CHESTPLATE);
+                        add(output, ModItems.WATER_LEGGINGS);
+                        add(output, ModItems.WATER_BOOTS);
 
                         // Earth Armor
-                        output.accept(ModItems.EARTH_HELMET.get());
-                        output.accept(ModItems.EARTH_CHESTPLATE.get());
-                        output.accept(ModItems.EARTH_LEGGINGS.get());
-                        output.accept(ModItems.EARTH_BOOTS.get());
+                        add(output, ModItems.EARTH_HELMET);
+                        add(output, ModItems.EARTH_CHESTPLATE);
+                        add(output, ModItems.EARTH_LEGGINGS);
+                        add(output, ModItems.EARTH_BOOTS);
 
                         // Royal Crown
-                        output.accept(ModItems.ROYAL_CROWN.get());
+                        add(output, ModItems.ROYAL_CROWN);
 
                         // Soul Scythe
-                        output.accept(ModItems.SOUL_SCYTHE.get());
+                        add(output, ModItems.SOUL_SCYTHE);
 
                         // Soul Contract
-                        output.accept(ModItems.SOUL_CONTRACT.get());
+                        add(output, ModItems.SOUL_CONTRACT);
+
+                        // Soul Stone
+                        add(output, ModItems.SOUL_STONE);
 
                         // Reset Pearl
-                        output.accept(ModItems.ELEMENT_RESET_PEARL.get());
+                        add(output, ModItems.ELEMENT_RESET_PEARL);
 
                         // Moon Contract Rewards
-                        output.accept(ModItems.EXPLOSIVE_CONCENTRATION.get());
-                        output.accept(ModItems.PROTECTION_GAUNTLET.get());
-                        output.accept(ModItems.MORGAN_SWORD.get());
+                        add(output, ModItems.EXPLOSIVE_CONCENTRATION);
+                        add(output, ModItems.PROTECTION_GAUNTLET);
+                        add(output, ModItems.MORGAN_SWORD);
 
                         // Air Armor
-                        output.accept(ModItems.AIR_HELMET.get());
-                        output.accept(ModItems.AIR_CHESTPLATE.get());
-                        output.accept(ModItems.AIR_LEGGINGS.get());
-                        output.accept(ModItems.AIR_BOOTS.get());
+                        add(output, ModItems.AIR_HELMET);
+                        add(output, ModItems.AIR_CHESTPLATE);
+                        add(output, ModItems.AIR_LEGGINGS);
+                        add(output, ModItems.AIR_BOOTS);
 
                         // Freak Circus
-                        output.accept(ModItems.PIERROT_CRYSTAL.get());
-                        output.accept(ModItems.HARLEQUIN_CRYSTAL.get());
-                        output.accept(ModItems.TICKET_TAKER_CRYSTAL.get());
-                        output.accept(ModItems.PIERROT_INGOT.get());
-                        output.accept(ModItems.HARLEQUIN_INGOT.get());
-                        output.accept(ModItems.TICKET_TAKER_INGOT.get());
-                        output.accept(ModItems.PIERROT_WAND.get());
-                        output.accept(ModItems.HARLEQUIN_WAND.get());
-                        output.accept(ModItems.TICKET_TAKER_WAND.get());
-                        output.accept(ModItems.PIERROT_DAGGER.get());
-                        output.accept(ModItems.HARLEQUIN_BLADE.get());
-                        output.accept(ModItems.TICKET_PUNCH.get());
+                        add(output, ModItems.PIERROT_CRYSTAL);
+                        add(output, ModItems.HARLEQUIN_CRYSTAL);
+                        add(output, ModItems.TICKET_TAKER_CRYSTAL);
+                        add(output, ModItems.PIERROT_INGOT);
+                        add(output, ModItems.HARLEQUIN_INGOT);
+                        add(output, ModItems.TICKET_TAKER_INGOT);
+                        add(output, ModItems.PIERROT_WAND);
+                        add(output, ModItems.HARLEQUIN_WAND);
+                        add(output, ModItems.TICKET_TAKER_WAND);
+                        add(output, ModItems.PIERROT_DAGGER);
+                        add(output, ModItems.HARLEQUIN_BLADE);
+                        add(output, ModItems.TICKET_PUNCH);
                     })
                     .build());
 
