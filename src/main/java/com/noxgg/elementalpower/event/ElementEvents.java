@@ -312,6 +312,7 @@ public class ElementEvents {
         com.noxgg.elementalpower.world.ShadowFormManager.onPlayerLogout(event.getEntity().getUUID());
         com.noxgg.elementalpower.world.RaccoonManager.onPlayerLogout(event.getEntity().getUUID());
         com.noxgg.elementalpower.world.PuppeteerManager.onPlayerLogout(event.getEntity().getUUID());
+        com.noxgg.elementalpower.world.AbsoluteSolverManager.onPlayerLogout(event.getEntity().getUUID());
     }
 
     // === RACCOON + SHADOW MILK: Prevent death ===
@@ -616,6 +617,13 @@ public class ElementEvents {
                     player.addEffect(new MobEffectInstance(MobEffects.ABSORPTION, bonusDuration, 1, false, false));
                     player.addEffect(new MobEffectInstance(MobEffects.DIG_SPEED, bonusDuration, 0, false, false));
                     if (level >= 20) player.addEffect(new MobEffectInstance(MobEffects.DAMAGE_BOOST, bonusDuration, bonusAmplifier, false, false));
+                }
+                case ABSOLUTE_SOLVER -> {
+                    // The Solver constantly mends and reinforces its host.
+                    player.addEffect(new MobEffectInstance(MobEffects.NIGHT_VISION, bonusDuration, 0, false, false));
+                    player.addEffect(new MobEffectInstance(MobEffects.REGENERATION, bonusDuration, bonusAmplifier, false, false));
+                    if (level >= 20) player.addEffect(new MobEffectInstance(MobEffects.DAMAGE_RESISTANCE, bonusDuration, 0, false, false));
+                    if (level >= 30) player.addEffect(new MobEffectInstance(MobEffects.DAMAGE_BOOST, bonusDuration, 0, false, false));
                 }
             }
 

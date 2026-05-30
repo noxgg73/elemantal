@@ -169,6 +169,13 @@ public class ModItems {
                 public boolean isFoil(net.minecraft.world.item.ItemStack stack) { return true; }
             });
 
+    // Absolute Solver focus (Murder Drones class)
+    public static final RegistryObject<Item> SOLVER_CORE = ITEMS.register("solver_core",
+            () -> new Item(new Item.Properties().stacksTo(1).rarity(net.minecraft.world.item.Rarity.EPIC)) {
+                @Override
+                public boolean isFoil(net.minecraft.world.item.ItemStack stack) { return true; }
+            });
+
     // Freak Circus crystals
     public static final RegistryObject<Item> PIERROT_CRYSTAL = ITEMS.register("pierrot_crystal",
             () -> new Item(new Item.Properties().rarity(net.minecraft.world.item.Rarity.RARE)));

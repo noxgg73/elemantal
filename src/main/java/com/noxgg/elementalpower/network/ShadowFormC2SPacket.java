@@ -41,6 +41,17 @@ public class ShadowFormC2SPacket {
                     return;
                 }
 
+                // Absolute Solver: L key toggles the winged Solver form
+                if (data.getElement() == ElementType.ABSOLUTE_SOLVER) {
+                    if (data.getLevel() < 10 && !player.isCreative() && !player.hasPermissions(2)) {
+                        player.sendSystemMessage(Component.literal(">> Forme du Solver verrouillee! Niveau 10 requis (actuel: " + data.getLevel() + ")")
+                                .withStyle(ChatFormatting.RED));
+                        return;
+                    }
+                    com.noxgg.elementalpower.world.AbsoluteSolverManager.toggleSolverForm(player);
+                    return;
+                }
+
                 if (data.getElement() != ElementType.DARKNESS) {
                     player.sendSystemMessage(Component.literal("Ce sort n'est pas disponible pour ta classe!")
                             .withStyle(ChatFormatting.RED));

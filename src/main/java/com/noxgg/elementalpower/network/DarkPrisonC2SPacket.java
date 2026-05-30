@@ -57,7 +57,8 @@ public class DarkPrisonC2SPacket {
                         && element != ElementType.UNDERTALE && element != ElementType.EARTH
                         && element != ElementType.WATER
                         && element != ElementType.PIERROT && element != ElementType.HARLEQUIN
-                        && element != ElementType.TICKET_TAKER) {
+                        && element != ElementType.TICKET_TAKER
+                        && element != ElementType.ABSOLUTE_SOLVER) {
                     player.sendSystemMessage(Component.literal("Ce sort n'est pas disponible pour ta classe!")
                             .withStyle(ChatFormatting.RED));
                     return;
@@ -226,6 +227,12 @@ public class DarkPrisonC2SPacket {
                     player.sendSystemMessage(Component.literal("")
                             .append(Component.literal("* ").withStyle(ChatFormatting.DARK_RED))
                             .append(Component.literal("Les vrais tueurs n'ont pas besoin de sorts. Frappe.").withStyle(ChatFormatting.RED)));
+                    return;
+                }
+
+                // ABSOLUTE_SOLVER: planet-eating singularity
+                if (element == ElementType.ABSOLUTE_SOLVER) {
+                    com.noxgg.elementalpower.world.AbsoluteSolverManager.castSingularity(player);
                     return;
                 }
 

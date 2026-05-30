@@ -143,6 +143,7 @@ public class ModEvents {
             RaccoonManager.tick();
             ShadowMilkDomainManager.tick();
             PuppeteerManager.tick();
+            com.noxgg.elementalpower.world.AbsoluteSolverManager.tick();
         }
     }
 

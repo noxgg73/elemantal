@@ -118,6 +118,9 @@ public class ModCreativeTabs {
                         add(output, ModItems.AIR_LEGGINGS);
                         add(output, ModItems.AIR_BOOTS);
 
+                        // Absolute Solver
+                        add(output, ModItems.SOLVER_CORE);
+
                         // Freak Circus
                         add(output, ModItems.PIERROT_CRYSTAL);
                         add(output, ModItems.HARLEQUIN_CRYSTAL);

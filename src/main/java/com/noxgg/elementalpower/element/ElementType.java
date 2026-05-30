@@ -20,7 +20,8 @@ public enum ElementType {
     UNDERTALE("undertale", "Undertale", ChatFormatting.YELLOW, 0xFFFF00),
     PIERROT("pierrot", "Pierrot", ChatFormatting.DARK_PURPLE, 0x2A0A4A),
     HARLEQUIN("harlequin", "Harlequin", ChatFormatting.RED, 0xC20D45),
-    TICKET_TAKER("ticket_taker", "Ticket Taker", ChatFormatting.GOLD, 0xCFA227);
+    TICKET_TAKER("ticket_taker", "Ticket Taker", ChatFormatting.GOLD, 0xCFA227),
+    ABSOLUTE_SOLVER("absolute_solver", "Absolute Solver", ChatFormatting.LIGHT_PURPLE, 0xD400FF);
 
     private final String id;
     private final String displayName;
@@ -58,6 +59,7 @@ public enum ElementType {
             case PIERROT -> "Yandere silencieux. R: Obsession Mortelle. G: Lien d'Obsession (attire la proie). Sneak: invisibilite.";
             case HARLEQUIN -> "Rival seducteur. R: Mascarade (charme zone). G: Echange Cruel (swap+malus). Agilite extreme.";
             case TICKET_TAKER -> "Receveur du Cirque. R: Ticket Maudit (cage). G: Confiscation (drain massif). Resistance.";
+            case ABSOLUTE_SOLVER -> "Le programme qui brise les lois de la realite. R: Membres de Desassemblage. G: Singularite Absolue. L: Forme du Solver (vol).";
             case NONE -> "Aucun element selectionne.";
         };
     }

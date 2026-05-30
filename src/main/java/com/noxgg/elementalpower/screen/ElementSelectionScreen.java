@@ -14,7 +14,8 @@ public class ElementSelectionScreen extends Screen {
             ElementType.SPACE, ElementType.TIME, ElementType.POISON, ElementType.DARKNESS,
             ElementType.LIGHT, ElementType.DEMON, ElementType.NATURE, ElementType.LIGHTNING,
             ElementType.ROYAL, ElementType.UNDERTALE,
-            ElementType.PIERROT, ElementType.HARLEQUIN, ElementType.TICKET_TAKER
+            ElementType.PIERROT, ElementType.HARLEQUIN, ElementType.TICKET_TAKER,
+            ElementType.ABSOLUTE_SOLVER
     };
 
     private ElementType hoveredElement = null;

@@ -641,6 +641,9 @@ public class UseElementPowerC2SPacket {
                         level.playSound(null, player.blockPosition(), SoundEvents.AMETHYST_BLOCK_CHIME, SoundSource.PLAYERS, 1.5f, 0.7f);
                         level.playSound(null, player.blockPosition(), SoundEvents.IRON_DOOR_CLOSE, SoundSource.PLAYERS, 1.5f, 0.6f);
                     }
+                    case ABSOLUTE_SOLVER -> {
+                        com.noxgg.elementalpower.world.AbsoluteSolverManager.castTendrils(player);
+                    }
                     default -> {}
                 }
             });
