@@ -36,10 +36,49 @@ fi
 VERSION="$(basename "$JAR" | sed -E 's/^elementalpower-(.*)\.jar$/\1/')"
 ZIP="$REPO_DIR/elementalpower-${VERSION}.zip"
 
+# Versions cibles lues depuis gradle.properties
+MC_VERSION="$(sed -nE 's/^minecraft_version=([0-9.]+).*/\1/p' gradle.properties | head -1)"
+FORGE_VERSION="$(sed -nE 's/^forge_version=([0-9.]+).*/\1/p' gradle.properties | head -1)"
+MC_VERSION="${MC_VERSION:-1.20.1}"
+FORGE_VERSION="${FORGE_VERSION:-47.2.0}"
+
+# === Construit une INSTANCE PrismLauncher/MultiMC importable ===
+# (Prism "Importer" attend un modpack, pas un .jar : on emballe une instance
+#  complete Minecraft + Forge avec le mod deja dans .minecraft/mods/)
+STAGE="$(mktemp -d)"
+trap 'rm -rf "$STAGE"' EXIT
+
+mkdir -p "$STAGE/.minecraft/mods"
+cp "$JAR" "$STAGE/.minecraft/mods/"
+
+cat > "$STAGE/instance.cfg" <<CFG
+InstanceType=OneSix
+name=Elemental Power ${VERSION}
+iconKey=default
+CFG
+
+cat > "$STAGE/mmc-pack.json" <<JSON
+{
+    "components": [
+        {
+            "uid": "net.minecraft",
+            "version": "${MC_VERSION}"
+        },
+        {
+            "uid": "net.minecraftforge",
+            "version": "${FORGE_VERSION}"
+        }
+    ],
+    "formatVersion": 1
+}
+JSON
+
 rm -f "$ZIP"
-( cd build/libs && zip -j "$ZIP" "$(basename "$JAR")" ) >/dev/null
+( cd "$STAGE" && zip -r "$ZIP" instance.cfg mmc-pack.json .minecraft ) >/dev/null
 
 echo ""
 echo ">> BUILD OK"
-echo "   jar : $JAR"
-echo "   zip : $ZIP  (a importer/glisser dans PrismLauncher)"
+echo "   jar      : $JAR"
+echo "   instance : $ZIP"
+echo "              -> PrismLauncher : Ajouter une instance > Importer depuis un fichier zip"
+echo "              (Minecraft ${MC_VERSION} + Forge ${FORGE_VERSION}, mod inclus)"

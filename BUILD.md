@@ -13,12 +13,17 @@ embarque par PrismLauncher (le runtime Mojang `java-runtime-gamma`).
 Le script :
 1. force `JAVA_HOME` vers le JDK 17 de PrismLauncher,
 2. lance `./gradlew build`,
-3. produit a la racine du repo un **`elementalpower-<version>.zip`** (contenant le `.jar`),
-   pret a etre glisse/importe dans PrismLauncher.
+3. produit a la racine du repo une **instance PrismLauncher** `elementalpower-<version>.zip`
+   (format MultiMC : `instance.cfg` + `mmc-pack.json` declarant Minecraft + Forge,
+   avec le mod deja dans `.minecraft/mods/`).
 
 Sorties :
-- `build/libs/elementalpower-<version>.jar` — le mod
-- `elementalpower-<version>.zip` — a la racine, facile a trouver
+- `build/libs/elementalpower-<version>.jar` — le mod seul (a glisser dans le dossier Mods d'une instance existante)
+- `elementalpower-<version>.zip` — a la racine : **instance importable** dans PrismLauncher
+  (Ajouter une instance > Importer depuis un fichier zip)
+
+> Important : Prism "Importer" attend un *modpack/instance*, pas un simple `.jar`.
+> C'est pourquoi le zip est une instance complete et non juste le jar zippe.
 
 ## Build manuel (equivalent)
 
