@@ -56,18 +56,34 @@ public class AbsoluteSolverManager {
     // Power list shown in the R menu (index == PlayerElement.solverPower)
     public static final String[] POWER_NAMES = {
             "Membres de Desassemblage",
+            "Acide Nanite",
+            "Essaim de Nanites",
             "Singularite Absolue",
-            "Forme du Solver",
-            "Reconstruction"
+            "Telekinesie",
+            "Possession",
+            "Reconstruction de Drone",
+            "Manipulation de la Matiere",
+            "Glitch Spatial",
+            "Symbole du Solver",
+            "Reconstruction",
+            "Forme du Solver"
     };
     public static final String[] POWER_DESCS = {
             "Tendrilles qui lacerent et attirent les cibles (acide nanite).",
+            "Crachat de nanites sur une cible: faibles degats + poison/wither.",
+            "Nuage de nanites: poison, wither et lenteur autour de toi.",
             "Singularite qui aspire entites et matiere pendant ~9s.",
-            "Transformation ailee: vol, regen, resistance (bascule).",
-            "Reconstruction de la matiere: soin total, purge, absorption + onde."
+            "Souleve les ennemis proches et les projette devant toi.",
+            "Prend le controle du mob le plus proche (combat pour toi).",
+            "Reconstruit 2 drones allies (golems) a partir de la matiere.",
+            "Erige un mur de matiere du Solver devant toi.",
+            "Glitch spatial: clignement-teleportation dans ton regard.",
+            "Marque les ennemis: peur, aveuglement, faiblesse (sans degats).",
+            "Reconstruction de soi: soin total, purge, absorption + onde.",
+            "Transformation ailee: vol, regen, resistance (bascule)."
     };
     // Cooldown in ticks per power (right-click trigger)
-    private static final int[] POWER_COOLDOWNS = {30, 200, 20, 100};
+    private static final int[] POWER_COOLDOWNS = {30, 12, 25, 200, 40, 60, 160, 40, 25, 30, 100, 20};
 
     public static String powerName(int i) {
         return (i >= 0 && i < POWER_NAMES.length) ? POWER_NAMES[i] : POWER_NAMES[0];
@@ -88,11 +104,210 @@ public class AbsoluteSolverManager {
         nextTriggerTick.put(player.getUUID(), now + POWER_COOLDOWNS[power]);
 
         switch (power) {
-            case 1 -> castSingularity(player);
-            case 2 -> toggleSolverForm(player);
-            case 3 -> castReconstruction(player);
+            case 1 -> castNaniteSpit(player);
+            case 2 -> castNaniteSwarm(player);
+            case 3 -> castSingularity(player);
+            case 4 -> castTelekinesis(player);
+            case 5 -> castPossession(player);
+            case 6 -> castDroneReconstruction(player);
+            case 7 -> castMatterWall(player);
+            case 8 -> castGlitchBlink(player);
+            case 9 -> castSolverSymbol(player);
+            case 10 -> castReconstruction(player);
+            case 11 -> toggleSolverForm(player);
             default -> castTendrils(player);
         }
+    }
+
+    private static LivingEntity nearestTarget(ServerPlayer player, double range) {
+        ServerLevel level = player.serverLevel();
+        LivingEntity best = null;
+        double bestSq = range * range;
+        for (Entity e : level.getEntities(player, player.getBoundingBox().inflate(range),
+                e -> e instanceof LivingEntity && e != player && !(e instanceof Player))) {
+            double d = e.distanceToSqr(player);
+            if (d < bestSq) { bestSq = d; best = (LivingEntity) e; }
+        }
+        return best;
+    }
+
+    private static LivingEntity lookTarget(ServerPlayer player, double range) {
+        ServerLevel level = player.serverLevel();
+        Vec3 eye = player.getEyePosition();
+        Vec3 look = player.getLookAngle();
+        LivingEntity best = null;
+        double closest = range;
+        for (Entity e : level.getEntities(player, player.getBoundingBox().inflate(range),
+                ent -> ent instanceof LivingEntity && ent != player && !(ent instanceof Player))) {
+            Vec3 to = e.position().add(0, e.getBbHeight() / 2, 0).subtract(eye);
+            double dist = to.length();
+            if (dist > closest) continue;
+            if (look.dot(to.normalize()) > 0.92) { closest = dist; best = (LivingEntity) e; }
+        }
+        return best;
+    }
+
+    // 1 — ACIDE NANITE: weak single-target ranged spit
+    public static void castNaniteSpit(ServerPlayer player) {
+        ServerLevel level = player.serverLevel();
+        final int[] lvl = {1};
+        player.getCapability(PlayerElementProvider.PLAYER_ELEMENT).ifPresent(d -> lvl[0] = d.getLevel());
+        LivingEntity target = lookTarget(player, 30);
+
+        Vec3 from = player.getEyePosition();
+        Vec3 to = target != null ? target.position().add(0, target.getBbHeight() * 0.5, 0) : from.add(player.getLookAngle().scale(20));
+        drawTendril(level, from, to);
+        level.sendParticles(SOLVER_MAGENTA, to.x, to.y, to.z, 12, 0.2, 0.2, 0.2, 0.03);
+
+        if (target != null) {
+            float dmg = 6.0f + lvl[0] * 0.2f;
+            target.hurt(level.damageSources().magic(), dmg);
+            target.addEffect(new MobEffectInstance(MobEffects.POISON, 100, 1));
+            target.addEffect(new MobEffectInstance(MobEffects.WITHER, 60, 0));
+        }
+        level.playSound(null, player.blockPosition(), SoundEvents.SCULK_CATALYST_BLOOM, SoundSource.PLAYERS, 0.9f, 1.3f);
+    }
+
+    // 2 — ESSAIM DE NANITES: AoE affliction cloud around the player
+    public static void castNaniteSwarm(ServerPlayer player) {
+        ServerLevel level = player.serverLevel();
+        level.getEntities(player, player.getBoundingBox().inflate(8),
+                e -> e instanceof LivingEntity && e != player).forEach(e -> {
+            LivingEntity living = (LivingEntity) e;
+            living.addEffect(new MobEffectInstance(MobEffects.POISON, 160, 2));
+            living.addEffect(new MobEffectInstance(MobEffects.WITHER, 100, 1));
+            living.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 120, 2));
+        });
+        for (int i = 0; i < 90; i++) {
+            double a = level.random.nextDouble() * Math.PI * 2;
+            double r = level.random.nextDouble() * 8.0;
+            double px = player.getX() + Math.cos(a) * r;
+            double pz = player.getZ() + Math.sin(a) * r;
+            level.sendParticles(SOLVER_MAGENTA, px, player.getY() + level.random.nextDouble() * 2, pz, 1, 0, 0, 0, 0.01);
+            if (i % 3 == 0) level.sendParticles(SOLVER_YELLOW, px, player.getY() + level.random.nextDouble() * 2, pz, 1, 0, 0, 0, 0.0);
+        }
+        level.playSound(null, player.blockPosition(), SoundEvents.SCULK_SHRIEKER_SHRIEK, SoundSource.PLAYERS, 1.0f, 1.2f);
+    }
+
+    // 4 — TELEKINESIE: lift nearby entities then fling them forward
+    public static void castTelekinesis(ServerPlayer player) {
+        ServerLevel level = player.serverLevel();
+        Vec3 fling = player.getLookAngle().scale(2.2);
+        level.getEntities(player, player.getBoundingBox().inflate(10),
+                e -> e instanceof LivingEntity && e != player).forEach(e -> {
+            LivingEntity living = (LivingEntity) e;
+            living.setDeltaMovement(fling.x, 1.0, fling.z);
+            living.hurtMarked = true;
+            living.hurt(level.damageSources().magic(), 5.0f);
+            level.sendParticles(SOLVER_WHITE, e.getX(), e.getY() + 1, e.getZ(), 10, 0.3, 0.3, 0.3, 0.05);
+        });
+        level.playSound(null, player.blockPosition(), SoundEvents.WARDEN_SONIC_CHARGE, SoundSource.PLAYERS, 1.4f, 0.6f);
+        level.playSound(null, player.blockPosition(), SoundEvents.WARDEN_SONIC_BOOM, SoundSource.PLAYERS, 0.6f, 1.6f);
+    }
+
+    // 5 — POSSESSION: take control of the nearest mob (fights for the caster)
+    public static void castPossession(ServerPlayer player) {
+        ServerLevel level = player.serverLevel();
+        LivingEntity target = nearestTarget(player, 20);
+        if (target instanceof Mob mob) {
+            LivingEntity foe = null;
+            for (Entity e : level.getEntities(player, mob.getBoundingBox().inflate(16),
+                    e -> e instanceof LivingEntity && e != player && e != mob && !(e instanceof Player))) {
+                foe = (LivingEntity) e; break;
+            }
+            if (foe != null) { mob.setTarget(foe); mob.setLastHurtByMob(foe); }
+            mob.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SPEED, 600, 1));
+            mob.addEffect(new MobEffectInstance(MobEffects.DAMAGE_BOOST, 600, 1));
+            mob.addEffect(new MobEffectInstance(MobEffects.GLOWING, 600, 0));
+            for (int i = 0; i < 30; i++) {
+                level.sendParticles(SOLVER_MAGENTA, mob.getX(), mob.getY() + mob.getBbHeight(), mob.getZ(), 1, 0.3, 0.3, 0.3, 0.02);
+            }
+            player.sendSystemMessage(Component.literal(">> Possession: ")
+                    .withStyle(ChatFormatting.LIGHT_PURPLE)
+                    .append(Component.literal(mob.getType().getDescription().getString() + " obeit au Solver.")
+                            .withStyle(ChatFormatting.DARK_PURPLE)));
+        } else {
+            player.sendSystemMessage(Component.literal(">> Aucun esprit a posseder.").withStyle(ChatFormatting.LIGHT_PURPLE));
+        }
+        level.playSound(null, player.blockPosition(), SoundEvents.EVOKER_CAST_SPELL, SoundSource.PLAYERS, 1.2f, 0.7f);
+    }
+
+    // 6 — RECONSTRUCTION DE DRONE: build 2 allied golems out of matter
+    public static void castDroneReconstruction(ServerPlayer player) {
+        ServerLevel level = player.serverLevel();
+        Vec3 look = player.getLookAngle();
+        for (int i = 0; i < 2; i++) {
+            Vec3 spot = player.position().add(look.scale(3)).add((i == 0 ? 1.5 : -1.5), 0, 0);
+            net.minecraft.world.entity.animal.IronGolem golem =
+                    new net.minecraft.world.entity.animal.IronGolem(net.minecraft.world.entity.EntityType.IRON_GOLEM, level);
+            golem.setPos(spot.x, player.getY(), spot.z);
+            golem.setPlayerCreated(true);
+            golem.addEffect(new MobEffectInstance(MobEffects.GLOWING, 1200, 0));
+            level.addFreshEntity(golem);
+            level.sendParticles(SOLVER_WHITE, spot.x, player.getY() + 1, spot.z, 40, 0.4, 0.8, 0.4, 0.1);
+            level.sendParticles(SOLVER_MAGENTA, spot.x, player.getY() + 1, spot.z, 25, 0.4, 0.8, 0.4, 0.08);
+        }
+        level.playSound(null, player.blockPosition(), SoundEvents.RESPAWN_ANCHOR_CHARGE, SoundSource.PLAYERS, 1.2f, 0.8f);
+        player.sendSystemMessage(Component.literal(">> 2 drones reconstruits servent le Solver.")
+                .withStyle(ChatFormatting.LIGHT_PURPLE));
+    }
+
+    // 7 — MANIPULATION DE LA MATIERE: raise a wall of Solver matter in front
+    public static void castMatterWall(ServerPlayer player) {
+        ServerLevel level = player.serverLevel();
+        Vec3 look = player.getLookAngle();
+        Vec3 flat = new Vec3(look.x, 0, look.z).normalize();
+        BlockPos base = BlockPos.containing(player.position().add(flat.scale(3)));
+        int perpX = (int) Math.round(-flat.z);
+        int perpZ = (int) Math.round(flat.x);
+        for (int w = -2; w <= 2; w++) {
+            for (int h = 0; h < 4; h++) {
+                BlockPos p = base.offset(perpX * w, h, perpZ * w);
+                if (level.getBlockState(p).isAir()) {
+                    level.setBlock(p, net.minecraft.world.level.block.Blocks.AMETHYST_BLOCK.defaultBlockState(), 3);
+                    level.sendParticles(SOLVER_MAGENTA, p.getX() + 0.5, p.getY() + 0.5, p.getZ() + 0.5, 3, 0.2, 0.2, 0.2, 0.02);
+                }
+            }
+        }
+        level.playSound(null, player.blockPosition(), SoundEvents.AMETHYST_BLOCK_RESONATE, SoundSource.PLAYERS, 1.3f, 0.7f);
+    }
+
+    // 8 — GLITCH SPATIAL: blink teleport in look direction
+    public static void castGlitchBlink(ServerPlayer player) {
+        ServerLevel level = player.serverLevel();
+        Vec3 from = player.position();
+        Vec3 dest = from.add(player.getLookAngle().scale(15));
+        // particle trail from origin to destination
+        for (double t = 0; t <= 1; t += 0.05) {
+            Vec3 p = from.add(dest.subtract(from).scale(t)).add(0, 1, 0);
+            level.sendParticles(SOLVER_MAGENTA, p.x, p.y, p.z, 1, 0.05, 0.05, 0.05, 0.0);
+            level.sendParticles(ParticleTypes.REVERSE_PORTAL, p.x, p.y, p.z, 1, 0.05, 0.05, 0.05, 0.02);
+        }
+        player.teleportTo(dest.x, dest.y, dest.z);
+        player.addEffect(new MobEffectInstance(MobEffects.DAMAGE_RESISTANCE, 40, 4, false, false));
+        level.playSound(null, player.blockPosition(), SoundEvents.ENDERMAN_TELEPORT, SoundSource.PLAYERS, 1.0f, 0.5f);
+        level.playSound(null, player.blockPosition(), SoundEvents.SCULK_CATALYST_BLOOM, SoundSource.PLAYERS, 0.8f, 1.5f);
+    }
+
+    // 9 — SYMBOLE DU SOLVER: fear/debuff mark (no damage) — the weakest utility
+    public static void castSolverSymbol(ServerPlayer player) {
+        ServerLevel level = player.serverLevel();
+        level.getEntities(player, player.getBoundingBox().inflate(12),
+                e -> e instanceof LivingEntity && e != player).forEach(e -> {
+            LivingEntity living = (LivingEntity) e;
+            living.addEffect(new MobEffectInstance(MobEffects.BLINDNESS, 120, 0));
+            living.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 200, 1));
+            living.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 120, 1));
+            living.addEffect(new MobEffectInstance(MobEffects.GLOWING, 200, 0));
+            level.sendParticles(SOLVER_YELLOW, e.getX(), e.getY() + e.getBbHeight() + 0.3, e.getZ(), 6, 0.2, 0.1, 0.2, 0.0);
+        });
+        // draw the floating symbol in front of the caster
+        Vec3 c = player.position().add(player.getLookAngle().scale(2)).add(0, 1.4, 0);
+        for (double a = 0; a < Math.PI * 2; a += 0.2) {
+            level.sendParticles(SOLVER_WHITE, c.x + Math.cos(a) * 0.8, c.y + Math.sin(a) * 0.8, c.z, 1, 0, 0, 0, 0.0);
+        }
+        level.sendParticles(SOLVER_MAGENTA, c.x, c.y, c.z, 6, 0.05, 0.3, 0.05, 0.0);
+        level.playSound(null, player.blockPosition(), SoundEvents.WARDEN_NEARBY_CLOSE, SoundSource.PLAYERS, 1.2f, 0.8f);
     }
 
     // ===================================================================
