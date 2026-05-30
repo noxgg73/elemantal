@@ -125,6 +125,18 @@ public class ModMessages {
                 .encoder(ShadowFormC2SPacket::toBytes)
                 .consumerMainThread(ShadowFormC2SPacket::handle)
                 .add();
+
+        net.messageBuilder(SolverSelectPowerC2SPacket.class, id(), NetworkDirection.PLAY_TO_SERVER)
+                .decoder(SolverSelectPowerC2SPacket::new)
+                .encoder(SolverSelectPowerC2SPacket::toBytes)
+                .consumerMainThread(SolverSelectPowerC2SPacket::handle)
+                .add();
+
+        net.messageBuilder(SolverTriggerC2SPacket.class, id(), NetworkDirection.PLAY_TO_SERVER)
+                .decoder(SolverTriggerC2SPacket::new)
+                .encoder(SolverTriggerC2SPacket::toBytes)
+                .consumerMainThread(SolverTriggerC2SPacket::handle)
+                .add();
     }
 
     public static <MSG> void sendToServer(MSG message) {

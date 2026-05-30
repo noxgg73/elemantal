@@ -13,6 +13,7 @@ public class PlayerElement {
     private boolean alastorModeActive = true; // true = Alastor spells, false = normal Demon spells
     private int alastorSpellSlot = 0; // 0=Tentacules, 1=Vaudou, 2=Onde Radio
     private boolean hasPuppeteerPower = false; // Fire class: puppeteer power from killing Pure Vanilla
+    private int solverPower = 0; // Absolute Solver class: selected power index (0=Tendrils,1=Singularity,2=Form,3=Reconstruction)
 
     // Soul Contract tracking
     private boolean hasActiveContract = false;
@@ -50,6 +51,9 @@ public class PlayerElement {
 
     public boolean hasPuppeteerPower() { return hasPuppeteerPower; }
     public void setPuppeteerPower(boolean power) { this.hasPuppeteerPower = power; }
+
+    public int getSolverPower() { return solverPower; }
+    public void setSolverPower(int power) { this.solverPower = power; }
 
     // Soul Contract methods
     public boolean hasActiveContract() { return hasActiveContract; }
@@ -113,6 +117,7 @@ public class PlayerElement {
         this.alastorModeActive = source.alastorModeActive;
         this.alastorSpellSlot = source.alastorSpellSlot;
         this.hasPuppeteerPower = source.hasPuppeteerPower;
+        this.solverPower = source.solverPower;
         this.hasActiveContract = source.hasActiveContract;
         this.contractQuestIndex = source.contractQuestIndex;
         this.contractDeadlineTick = source.contractDeadlineTick;
@@ -130,6 +135,7 @@ public class PlayerElement {
         tag.putBoolean("alastorModeActive", alastorModeActive);
         tag.putInt("alastorSpellSlot", alastorSpellSlot);
         tag.putBoolean("hasPuppeteerPower", hasPuppeteerPower);
+        tag.putInt("solverPower", solverPower);
         tag.putBoolean("hasActiveContract", hasActiveContract);
         tag.putInt("contractQuestIndex", contractQuestIndex);
         tag.putLong("contractDeadlineTick", contractDeadlineTick);
@@ -148,6 +154,7 @@ public class PlayerElement {
         alastorModeActive = tag.contains("alastorModeActive") ? tag.getBoolean("alastorModeActive") : isAlastor;
         alastorSpellSlot = tag.getInt("alastorSpellSlot");
         hasPuppeteerPower = tag.getBoolean("hasPuppeteerPower");
+        solverPower = tag.getInt("solverPower");
         hasActiveContract = tag.getBoolean("hasActiveContract");
         contractQuestIndex = tag.getInt("contractQuestIndex");
         contractDeadlineTick = tag.getLong("contractDeadlineTick");

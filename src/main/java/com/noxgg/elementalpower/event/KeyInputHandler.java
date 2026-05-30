@@ -2,12 +2,16 @@ package com.noxgg.elementalpower.event;
 
 import com.mojang.blaze3d.platform.InputConstants;
 import com.noxgg.elementalpower.ElementalPowerMod;
+import com.noxgg.elementalpower.element.ElementType;
+import com.noxgg.elementalpower.element.PlayerElementProvider;
 import com.noxgg.elementalpower.network.DarkPrisonC2SPacket;
 import com.noxgg.elementalpower.network.ModMessages;
 import com.noxgg.elementalpower.network.SpiritStrangleC2SPacket;
 import com.noxgg.elementalpower.network.ShadowFormC2SPacket;
+import com.noxgg.elementalpower.network.SolverTriggerC2SPacket;
 import com.noxgg.elementalpower.network.UseElementPowerC2SPacket;
 import com.noxgg.elementalpower.network.VisitPrisonC2SPacket;
+import com.noxgg.elementalpower.screen.SolverPowersScreen;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraftforge.api.distmarker.Dist;
@@ -67,21 +71,41 @@ public class KeyInputHandler {
     public static class ClientForgeEvents {
         @SubscribeEvent
         public static void onMouseInput(net.minecraftforge.client.event.InputEvent.MouseButton.Pre event) {
-            // Right click (button 1) while in spirit form -> strangle
             if (event.getButton() == 1 && event.getAction() == 1) {
-                if (Minecraft.getInstance().player != null &&
-                        Minecraft.getInstance().player.isInvisible() &&
-                        Minecraft.getInstance().player.getMainHandItem().isEmpty()) {
+                net.minecraft.world.entity.player.Player player = Minecraft.getInstance().player;
+                if (player == null) return;
+
+                // Absolute Solver: right click triggers the currently selected power
+                if (isAbsoluteSolver(player)) {
+                    ModMessages.sendToServer(new SolverTriggerC2SPacket());
+                    return;
+                }
+
+                // Right click (button 1) while in spirit form -> strangle
+                if (player.isInvisible() && player.getMainHandItem().isEmpty()) {
                     ModMessages.sendToServer(new SpiritStrangleC2SPacket());
                 }
             }
         }
 
+        private static boolean isAbsoluteSolver(net.minecraft.world.entity.player.Player player) {
+            boolean[] result = {false};
+            player.getCapability(PlayerElementProvider.PLAYER_ELEMENT).ifPresent(data ->
+                    result[0] = data.getElement() == ElementType.ABSOLUTE_SOLVER);
+            return result[0];
+        }
+
         @SubscribeEvent
         public static void onKeyInput(InputEvent.Key event) {
             if (USE_POWER_KEY.consumeClick()) {
-                if (Minecraft.getInstance().player != null) {
-                    ModMessages.sendToServer(new UseElementPowerC2SPacket());
+                net.minecraft.world.entity.player.Player player = Minecraft.getInstance().player;
+                if (player != null) {
+                    if (isAbsoluteSolver(player)) {
+                        // Absolute Solver: open the power-selection menu instead of casting directly
+                        Minecraft.getInstance().setScreen(new SolverPowersScreen());
+                    } else {
+                        ModMessages.sendToServer(new UseElementPowerC2SPacket());
+                    }
                 }
             }
             if (DARK_PRISON_KEY.consumeClick()) {

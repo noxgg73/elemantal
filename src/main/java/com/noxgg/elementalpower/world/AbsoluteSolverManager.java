@@ -51,6 +51,49 @@ public class AbsoluteSolverManager {
 
     private static final List<Singularity> singularities = new ArrayList<>();
     private static final Map<UUID, SolverForm> forms = new HashMap<>();
+    private static final Map<UUID, Long> nextTriggerTick = new HashMap<>();
+
+    // Power list shown in the R menu (index == PlayerElement.solverPower)
+    public static final String[] POWER_NAMES = {
+            "Membres de Desassemblage",
+            "Singularite Absolue",
+            "Forme du Solver",
+            "Reconstruction"
+    };
+    public static final String[] POWER_DESCS = {
+            "Tendrilles qui lacerent et attirent les cibles (acide nanite).",
+            "Singularite qui aspire entites et matiere pendant ~9s.",
+            "Transformation ailee: vol, regen, resistance (bascule).",
+            "Reconstruction de la matiere: soin total, purge, absorption + onde."
+    };
+    // Cooldown in ticks per power (right-click trigger)
+    private static final int[] POWER_COOLDOWNS = {30, 200, 20, 100};
+
+    public static String powerName(int i) {
+        return (i >= 0 && i < POWER_NAMES.length) ? POWER_NAMES[i] : POWER_NAMES[0];
+    }
+
+    /** Dispatches the player's currently-selected Solver power (right-click trigger). */
+    public static void triggerSelectedPower(ServerPlayer player) {
+        final int[] sel = {0};
+        player.getCapability(PlayerElementProvider.PLAYER_ELEMENT).ifPresent(d -> sel[0] = d.getSolverPower());
+        int power = sel[0];
+        if (power < 0 || power >= POWER_NAMES.length) power = 0;
+
+        long now = player.serverLevel().getGameTime();
+        long next = nextTriggerTick.getOrDefault(player.getUUID(), 0L);
+        if (now < next && !player.isCreative()) {
+            return; // still on cooldown
+        }
+        nextTriggerTick.put(player.getUUID(), now + POWER_COOLDOWNS[power]);
+
+        switch (power) {
+            case 1 -> castSingularity(player);
+            case 2 -> toggleSolverForm(player);
+            case 3 -> castReconstruction(player);
+            default -> castTendrils(player);
+        }
+    }
 
     // ===================================================================
     //  R KEY — DISASSEMBLY TENDRILS
@@ -443,6 +486,50 @@ public class AbsoluteSolverManager {
     }
 
     // ===================================================================
+    //  RECONSTRUCTION — matter mending (heal, cleanse, absorption, shockwave)
+    // ===================================================================
+    public static void castReconstruction(ServerPlayer player) {
+        ServerLevel level = player.serverLevel();
+
+        player.setHealth(player.getMaxHealth());
+        player.removeAllEffects();
+        player.addEffect(new MobEffectInstance(MobEffects.ABSORPTION, 1200, 3, false, false));
+        player.addEffect(new MobEffectInstance(MobEffects.REGENERATION, 200, 2, false, false));
+        player.addEffect(new MobEffectInstance(MobEffects.FIRE_RESISTANCE, 600, 0, false, false));
+        player.clearFire();
+
+        // Repulse and weaken nearby hostiles
+        level.getEntities(player, player.getBoundingBox().inflate(7),
+                e -> e instanceof LivingEntity && e != player).forEach(e -> {
+            LivingEntity living = (LivingEntity) e;
+            living.hurt(level.damageSources().magic(), 6.0f);
+            living.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 160, 1));
+            Vec3 away = e.position().subtract(player.position()).normalize().scale(1.1);
+            living.setDeltaMovement(away.x, 0.5, away.z);
+            living.hurtMarked = true;
+        });
+
+        // Reconstruction lattice
+        for (int i = 0; i < 70; i++) {
+            double a = level.random.nextDouble() * Math.PI * 2;
+            double r = level.random.nextDouble() * 3.0;
+            level.sendParticles(SOLVER_WHITE,
+                    player.getX() + Math.cos(a) * r, player.getY() + level.random.nextDouble() * 2.2, player.getZ() + Math.sin(a) * r,
+                    1, 0, 0.02, 0, 0.0);
+        }
+        level.sendParticles(SOLVER_MAGENTA, player.getX(), player.getY() + 1, player.getZ(), 40, 0.6, 1.0, 0.6, 0.1);
+        level.sendParticles(ParticleTypes.TOTEM_OF_UNDYING, player.getX(), player.getY() + 1, player.getZ(), 30, 0.5, 1.0, 0.5, 0.2);
+
+        level.playSound(null, player.blockPosition(), SoundEvents.RESPAWN_ANCHOR_CHARGE, SoundSource.PLAYERS, 1.2f, 1.4f);
+        level.playSound(null, player.blockPosition(), SoundEvents.BEACON_POWER_SELECT, SoundSource.PLAYERS, 1.0f, 0.8f);
+
+        player.sendSystemMessage(Component.literal(">> Reconstruction! ")
+                .withStyle(ChatFormatting.LIGHT_PURPLE, ChatFormatting.BOLD)
+                .append(Component.literal("Matiere reparee, afflictions purgees.")
+                        .withStyle(ChatFormatting.DARK_PURPLE)));
+    }
+
+    // ===================================================================
     public static void tick() {
         tickSingularities();
         tickForms();
@@ -450,5 +537,6 @@ public class AbsoluteSolverManager {
 
     public static void onPlayerLogout(UUID id) {
         forms.remove(id);
+        nextTriggerTick.remove(id);
     }
 }

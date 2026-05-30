@@ -59,7 +59,7 @@ public enum ElementType {
             case PIERROT -> "Yandere silencieux. R: Obsession Mortelle. G: Lien d'Obsession (attire la proie). Sneak: invisibilite.";
             case HARLEQUIN -> "Rival seducteur. R: Mascarade (charme zone). G: Echange Cruel (swap+malus). Agilite extreme.";
             case TICKET_TAKER -> "Receveur du Cirque. R: Ticket Maudit (cage). G: Confiscation (drain massif). Resistance.";
-            case ABSOLUTE_SOLVER -> "Le programme qui brise les lois de la realite. R: Membres de Desassemblage. G: Singularite Absolue. L: Forme du Solver (vol).";
+            case ABSOLUTE_SOLVER -> "Le programme qui brise les lois de la realite. R: menu des pouvoirs (Membres, Singularite, Forme, Reconstruction), clic droit pour declencher.";
             case NONE -> "Aucun element selectionne.";
         };
     }
